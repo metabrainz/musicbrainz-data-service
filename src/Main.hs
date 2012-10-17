@@ -17,6 +17,7 @@ import           Text.Digestive.View (View, viewErrors)
 import qualified Data.Map as Map
 import qualified Data.Text as T
 import qualified MusicBrainz.API.Artist as Artist
+import qualified MusicBrainz.API.Label as Label
 
 import           MusicBrainz (defaultConnectInfo, connectUser, connectDatabase, runMb, MusicBrainz)
 import           MusicBrainz.API.JSON ()
@@ -44,6 +45,8 @@ runMbAction :: MusicBrainz a -> IO a
 runMbAction = runMb defaultConnectInfo { connectDatabase = "musicbrainz_nes", connectUser = "musicbrainz" }
 
 main :: IO ()
-main = quickHttpServe $ route [("/artist/find-latest-by-mbid", expose Artist.findLatestByMbid)
+main = quickHttpServe $ route [("/artist/find-latest", expose Artist.findLatest)
                               ,("/artist/create", expose Artist.create)
+
+                              ,("/label/find-latest", expose Label.findLatest)
                               ]

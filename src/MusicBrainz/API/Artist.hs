@@ -1,22 +1,22 @@
 {-# LANGUAGE NoMonomorphismRestriction #-}
 {-# LANGUAGE OverloadedStrings #-}
 module MusicBrainz.API.Artist
-    ( findLatestByMbid
+    ( findLatest
     , create
     ) where
 
-import Control.Applicative
-import Data.Text (Text)
-import Text.Digestive
+import           Control.Applicative
+import           Data.Text (Text)
+import           Text.Digestive
 
 import qualified MusicBrainz.Data.Artist
 
-import MusicBrainz.API
-import MusicBrainz
+import           MusicBrainz
+import           MusicBrainz.API
+import qualified MusicBrainz.API.FindLatest as FindLatest
 
-findLatestByMbid :: Monad m => Form Text m (MusicBrainz (Maybe (CoreEntity Artist)))
-findLatestByMbid =
-  MusicBrainz.Data.Artist.findLatestByMbid <$> "mbid" .: mbid
+findLatest :: Monad m => Form Text m (MusicBrainz (Maybe (CoreEntity Artist)))
+findLatest = FindLatest.findLatest
 
 create :: Monad m => Form Text m (MusicBrainz (CoreEntity Artist))
 create = do
