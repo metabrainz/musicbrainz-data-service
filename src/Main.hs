@@ -24,27 +24,43 @@ import           MusicBrainz.API.JSON ()
 
 expose :: (MonadSnap m, ToJSON a) => Form Text m (MusicBrainz a) -> m ()
 expose f = do
-  (view, ret) <- runFormWith defaultSnapFormConfig { method = Just Post } "api" f
+  -- We run the 'form' that validates the users submitted parameters to the API
+  -- call.
+  (view, ret) <- postForm "api" f
   case ret of
     Just r -> do
+      -- The parameters validate to a valid API call, so we make it.
+      -- There's still a risk of explosions which we want to convey correctly,
+      -- so we 'try' to run the action.
       outcome <- liftIO (try (runMbAction r))
 
       modifyResponse (setContentType "application/json")
       case outcome of
         Left (exception :: SomeException) -> do
+          -- There was indeed an exception, so lets render that back to the
+          -- client.
           modifyResponse (setResponseCode 500)
           writeLBS . encode $ Map.fromList [("error"::Text, show exception)]
-        Right success -> writeLBS (encode success)
+        Right success ->
+          -- All went smoothly, so just render back the API result.
+          writeLBS (encode success)
 
     Nothing -> do
+      -- The client hasn't submitted valid parameters, so we'll render back
+      -- a list of all the parameters that failed validation.
       modifyResponse (setResponseCode 400)
       writeLBS (encode $ errorMap view)
+
+  where
+    postForm = runFormWith defaultSnapFormConfig { method = Just Post }
 
 errorMap :: View Text -> Map Text Text
 errorMap = Map.fromList . over (mapped._1) (T.intercalate ".") . viewErrors
 
 runMbAction :: MusicBrainz a -> IO a
-runMbAction = runMb defaultConnectInfo { connectDatabase = "musicbrainz_nes", connectUser = "musicbrainz" }
+runMbAction = runMb defaultConnectInfo { connectDatabase = "musicbrainz_nes"
+                                       , connectUser = "musicbrainz"
+                                       }
 
 main :: IO ()
 main = quickHttpServe $ route [("/artist/find-latest", expose Artist.findLatest)
