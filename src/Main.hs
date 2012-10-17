@@ -36,7 +36,9 @@ expose f = do
           writeLBS . encode $ Map.fromList [("error"::Text, show exception)]
         Right success -> writeLBS (encode success)
 
-    Nothing -> writeLBS (encode $ errorMap view)
+    Nothing -> do
+      modifyResponse (setResponseCode 400)
+      writeLBS (encode $ errorMap view)
 
 errorMap :: View Text -> Map Text Text
 errorMap = Map.fromList . over (mapped._1) (T.intercalate ".") . viewErrors
