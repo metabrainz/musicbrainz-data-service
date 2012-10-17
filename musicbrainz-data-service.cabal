@@ -12,6 +12,8 @@ executable musicbrainz-data-service
   build-depends:
     aeson,
     base,
+    containers,
+    lens,
     musicbrainz-data,
     digestive-functors,
     digestive-functors-snap,
