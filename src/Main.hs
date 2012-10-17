@@ -36,4 +36,5 @@ runMbAction = runMb defaultConnectInfo { connectDatabase = "musicbrainz_nes", co
 
 main :: IO ()
 main = quickHttpServe $ route [("/artist/find-latest-by-mbid", expose Artist.findLatestByMbid)
+                              ,("/artist/create", expose Artist.create)
                               ]
