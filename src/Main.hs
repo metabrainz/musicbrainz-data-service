@@ -1,12 +1,14 @@
 {-# LANGUAGE OverloadedStrings #-}
+{-# LANGUAGE ScopedTypeVariables #-}
 module Main where
 
+import           Control.Exception (SomeException, try)
 import           Control.Lens hiding (view)
 import           Control.Monad.IO.Class (liftIO)
 import           Data.Aeson (encode, ToJSON)
 import           Data.Map (Map)
 import           Data.Text (Text)
-import           Snap.Core (route, writeLBS, setContentType, modifyResponse, MonadSnap)
+import           Snap.Core (route, writeLBS, setContentType, modifyResponse, setResponseCode, MonadSnap)
 import           Snap.Http.Server (quickHttpServe)
 import           Text.Digestive (Method(Post), Form)
 import           Text.Digestive.Snap (method, defaultSnapFormConfig, runFormWith)
@@ -24,8 +26,15 @@ expose f = do
   (view, ret) <- runFormWith defaultSnapFormConfig { method = Just Post } "api" f
   case ret of
     Just r -> do
-      liftIO (runMbAction r) >>= writeLBS . encode
+      outcome <- liftIO (try (runMbAction r))
+
       modifyResponse (setContentType "application/json")
+      case outcome of
+        Left (exception :: SomeException) -> do
+          modifyResponse (setResponseCode 500)
+          writeLBS . encode $ Map.fromList [("error"::Text, show exception)]
+        Right success -> writeLBS (encode success)
+
     Nothing -> writeLBS (encode $ errorMap view)
 
 errorMap :: View Text -> Map Text Text
