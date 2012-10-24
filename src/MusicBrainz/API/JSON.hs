@@ -19,18 +19,6 @@ instance ToJSON a => ToJSON (CoreEntity a) where
                                  , "data" .= coreData
                                  ]
 
---------------------------------------------------------------------------------
-instance ToJSON Label where
-  toJSON Label{..} = object [ "name" .= labelName
-                            , "sort-name" .= labelSortName
-                            , "comment" .= labelComment
-                            , "begin-date" .= labelBeginDate
-                            , "end-date" .= labelEndDate
-                            , "ended" .= labelEnded
-                            , "type" .= labelType
-                            , "label-code" .= labelCode
-                            ]
-
 
 --------------------------------------------------------------------------------
 instance ToJSON Artist where
@@ -47,11 +35,39 @@ instance ToJSON Artist where
 
 
 --------------------------------------------------------------------------------
+instance ToJSON Label where
+  toJSON Label{..} = object [ "name" .= labelName
+                            , "sort-name" .= labelSortName
+                            , "comment" .= labelComment
+                            , "begin-date" .= labelBeginDate
+                            , "end-date" .= labelEndDate
+                            , "ended" .= labelEnded
+                            , "type" .= labelType
+                            , "label-code" .= labelCode
+                            ]
+
+
+--------------------------------------------------------------------------------
+instance ToJSON ReleaseGroup where
+  toJSON ReleaseGroup{..} = object
+    [ "name" .= releaseGroupName
+    , "comment" .= releaseGroupComment
+    , "primary_type" .= releaseGroupPrimaryType
+    , "artist_credit" .= releaseGroupArtistCredit
+    ]
+
+
+--------------------------------------------------------------------------------
 instance ToJSON PartialDate where
   toJSON (PartialDate y m d) = object [ "year" .= y
                                       , "month" .= m
                                       , "day" .= d
                                       ]
+
+
+--------------------------------------------------------------------------------
+instance ToJSON (Ref ArtistCredit) where
+  toJSON (ArtistCreditRef id') = toJSON id'
 
 
 --------------------------------------------------------------------------------
@@ -72,3 +88,8 @@ instance ToJSON (Ref Gender) where
 --------------------------------------------------------------------------------
 instance ToJSON (Ref LabelType) where
   toJSON (LabelTypeRef id') = toJSON id'
+
+
+--------------------------------------------------------------------------------
+instance ToJSON (Ref (ReleaseGroupType a)) where
+  toJSON (ReleaseGroupTypeRef id') = toJSON id'

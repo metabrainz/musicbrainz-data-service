@@ -2,14 +2,17 @@
 {-# LANGUAGE ScopedTypeVariables #-}
 module Main where
 
+import           Control.Applicative
 import           Control.Exception (SomeException, try)
 import           Control.Lens hiding (view)
 import           Control.Monad.IO.Class (liftIO)
+import           Control.Monad.State.Class (gets)
 import           Data.Aeson (encode, ToJSON)
+import           Data.Configurator (require)
 import           Data.Map (Map)
 import           Data.Text (Text)
-import           Snap.Core (route, writeLBS, setContentType, modifyResponse, setResponseCode, MonadSnap)
-import           Snap.Http.Server (quickHttpServe)
+import           Snap (SnapletInit, makeSnaplet, serveSnaplet, defaultConfig, Handler, getSnapletUserConfig, addRoutes)
+import           Snap.Core (writeLBS, setContentType, modifyResponse, setResponseCode)
 import           Text.Digestive (Method(Post), Form)
 import           Text.Digestive.Snap (method, defaultSnapFormConfig, runFormWith)
 import           Text.Digestive.View (View, viewErrors)
@@ -18,11 +21,12 @@ import qualified Data.Map as Map
 import qualified Data.Text as T
 import qualified MusicBrainz.API.Artist as Artist
 import qualified MusicBrainz.API.Label as Label
+import qualified MusicBrainz.API.ReleaseGroup as ReleaseGroup
 
-import           MusicBrainz (defaultConnectInfo, connectUser, connectDatabase, runMb, MusicBrainz)
+import           MusicBrainz (defaultConnectInfo, connectUser, connectDatabase, connectPassword, MusicBrainz, Context, openContext, runMbContext)
 import           MusicBrainz.API.JSON ()
 
-expose :: (MonadSnap m, ToJSON a) => Form Text m (MusicBrainz a) -> m ()
+expose :: ToJSON a => Form Text (Handler Service Service) (MusicBrainz a) -> Handler Service Service ()
 expose f = do
   -- We run the 'form' that validates the users submitted parameters to the API
   -- call.
@@ -32,7 +36,8 @@ expose f = do
       -- The parameters validate to a valid API call, so we make it.
       -- There's still a risk of explosions which we want to convey correctly,
       -- so we 'try' to run the action.
-      outcome <- liftIO (try (runMbAction r))
+      context <- gets svcContext
+      outcome <- liftIO (try (runMbContext context r))
 
       modifyResponse (setContentType "application/json")
       case outcome of
@@ -57,14 +62,31 @@ expose f = do
 errorMap :: View Text -> Map Text Text
 errorMap = Map.fromList . over (mapped._1) (T.intercalate ".") . viewErrors
 
-runMbAction :: MusicBrainz a -> IO a
-runMbAction = runMb defaultConnectInfo { connectDatabase = "musicbrainz_nes"
-                                       , connectUser = "musicbrainz"
-                                       }
+
+--------------------------------------------------------------------------------
+data Service = Service { svcContext :: Context }
+
+serviceInit :: SnapletInit Service Service
+serviceInit = makeSnaplet "service" "musicbrainz-data HTTP service" Nothing $ do
+  config <- getSnapletUserConfig
+  db <- liftIO $ require config "database"
+  user <- liftIO $ require config "username"
+  password <- liftIO $ require config "password"
+  addRoutes
+    [("/artist/find-latest", expose Artist.findLatest)
+    ,("/artist/create", expose Artist.create)
+
+    ,("/label/find-latest", expose Label.findLatest)
+
+    ,("/release-group/find-latest", expose ReleaseGroup.findLatest)
+    ,("/release-group/create", expose ReleaseGroup.create)
+    ]
+
+  Service <$> liftIO (openContext defaultConnectInfo
+    { connectDatabase = db
+    , connectUser = user
+    , connectPassword = password
+    })
 
 main :: IO ()
-main = quickHttpServe $ route [("/artist/find-latest", expose Artist.findLatest)
-                              ,("/artist/create", expose Artist.create)
-
-                              ,("/label/find-latest", expose Label.findLatest)
-                              ]
+main = serveSnaplet defaultConfig serviceInit
