@@ -5,10 +5,11 @@ module Main where
 import           Control.Applicative
 import           Control.Exception (SomeException, try)
 import           Control.Lens hiding (view)
+import           Control.Monad
 import           Control.Monad.IO.Class (liftIO)
 import           Control.Monad.State.Class (gets)
 import           Data.Aeson (encode, ToJSON)
-import           Data.Configurator (require)
+import           Data.Configurator (lookupDefault)
 import           Data.Map (Map)
 import           Data.Text (Text)
 import           Snap (SnapletInit, makeSnaplet, serveSnaplet, defaultConfig, Handler, getSnapletUserConfig, addRoutes)
@@ -69,9 +70,11 @@ data Service = Service { svcContext :: Context }
 serviceInit :: SnapletInit Service Service
 serviceInit = makeSnaplet "service" "musicbrainz-data HTTP service" Nothing $ do
   config <- getSnapletUserConfig
-  db <- liftIO $ require config "database"
-  user <- liftIO $ require config "username"
-  password <- liftIO $ require config "password"
+  [db, user, pass] <- liftIO $ forM
+    [ ("database", connectDatabase)
+    , ("username", connectUser)
+    , ("password", connectPassword)
+    ] $ \(key, def) -> lookupDefault (def defaultConnectInfo) config key
   addRoutes
     [("/artist/find-latest", expose Artist.findLatest)
     ,("/artist/create", expose Artist.create)
@@ -85,7 +88,7 @@ serviceInit = makeSnaplet "service" "musicbrainz-data HTTP service" Nothing $ do
   Service <$> liftIO (openContext defaultConnectInfo
     { connectDatabase = db
     , connectUser = user
-    , connectPassword = password
+    , connectPassword = pass
     })
 
 main :: IO ()
