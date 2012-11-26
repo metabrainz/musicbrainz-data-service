@@ -25,7 +25,7 @@ import qualified MusicBrainz.API.Artist as Artist
 import qualified MusicBrainz.API.Label as Label
 import qualified MusicBrainz.API.ReleaseGroup as ReleaseGroup
 
-import           MusicBrainz (defaultConnectInfo, connectUser, connectDatabase, connectPassword, MusicBrainz, Context, openContext, runMbContext)
+import           MusicBrainz (defaultConnectInfo, connectUser, connectDatabase, connectPassword, MusicBrainz, Context, openContext, runMbContext, withTransaction)
 import           MusicBrainz.API.JSON ()
 
 --------------------------------------------------------------------------------
@@ -45,7 +45,7 @@ expose f = do
       -- We run the 'form' that validates the users submitted parameters to the API
       -- call.
       context <- gets svcContext
-      outcome <- liftIO (try (runMbContext context (digestJSON "api" f json')))
+      outcome <- liftIO (try (runMbContext context (withTransaction $ digestJSON "api" f json')))
       modifyResponse (setContentType "application/json")
       case outcome of
         Left (exception :: SomeException) -> do
@@ -53,7 +53,6 @@ expose f = do
           -- client.
           modifyResponse (setResponseCode 500)
           writeLBS . encode $ Map.fromList [("error"::Text, show exception)]
-
 
         Right (view, ret') ->
           case ret' of
