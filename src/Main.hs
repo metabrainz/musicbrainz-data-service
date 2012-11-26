@@ -8,14 +8,15 @@ import           Control.Lens hiding (view)
 import           Control.Monad
 import           Control.Monad.IO.Class (liftIO)
 import           Control.Monad.State.Class (gets)
-import           Data.Aeson (encode, ToJSON)
+import           Data.Aeson (encode, ToJSON, json)
+import           Data.Attoparsec.Lazy (parse, maybeResult)
 import           Data.Configurator (lookupDefault)
 import           Data.Map (Map)
 import           Data.Text (Text)
 import           Snap (SnapletInit, makeSnaplet, serveSnaplet, defaultConfig, Handler, getSnapletUserConfig, addRoutes)
-import           Snap.Core (writeLBS, setContentType, modifyResponse, setResponseCode)
-import           Text.Digestive (Method(Post), Form)
-import           Text.Digestive.Snap (method, defaultSnapFormConfig, runFormWith)
+import           Snap.Core (writeLBS, setContentType, modifyResponse, setResponseCode, readRequestBody)
+import           Text.Digestive (Form)
+import           Text.Digestive.Aeson (digestJSON)
 import           Text.Digestive.View (View, viewErrors)
 
 import qualified Data.Map as Map
@@ -27,19 +28,24 @@ import qualified MusicBrainz.API.ReleaseGroup as ReleaseGroup
 import           MusicBrainz (defaultConnectInfo, connectUser, connectDatabase, connectPassword, MusicBrainz, Context, openContext, runMbContext)
 import           MusicBrainz.API.JSON ()
 
-expose :: ToJSON a => Form Text (Handler Service Service) (MusicBrainz a) -> Handler Service Service ()
+--------------------------------------------------------------------------------
+expose :: ToJSON a => Form Text MusicBrainz a -> Handler Service Service ()
 expose f = do
-  -- We run the 'form' that validates the users submitted parameters to the API
-  -- call.
-  (view, ret) <- postForm "api" f
-  case ret of
-    Just r -> do
-      -- The parameters validate to a valid API call, so we make it.
-      -- There's still a risk of explosions which we want to convey correctly,
-      -- so we 'try' to run the action.
-      context <- gets svcContext
-      outcome <- liftIO (try (runMbContext context r))
+  parsedJson <- maybeResult . parse json <$> readRequestBody (1024*1024)
 
+  case parsedJson of
+    Nothing -> do
+      -- The JSON the client submitted could not be parsed, so fail
+      modifyResponse (setResponseCode 400)
+
+    Just json' -> do
+      -- We run the 'form' that validates the users submitted parameters to the
+      -- API call.
+
+      -- We run the 'form' that validates the users submitted parameters to the API
+      -- call.
+      context <- gets svcContext
+      outcome <- liftIO (try (runMbContext context (digestJSON "api" f json')))
       modifyResponse (setContentType "application/json")
       case outcome of
         Left (exception :: SomeException) -> do
@@ -47,19 +53,22 @@ expose f = do
           -- client.
           modifyResponse (setResponseCode 500)
           writeLBS . encode $ Map.fromList [("error"::Text, show exception)]
-        Right success ->
-          -- All went smoothly, so just render back the API result.
-          writeLBS (encode success)
 
-    Nothing -> do
-      -- The client hasn't submitted valid parameters, so we'll render back
-      -- a list of all the parameters that failed validation.
-      modifyResponse (setResponseCode 400)
-      writeLBS (encode $ errorMap view)
 
-  where
-    postForm = runFormWith defaultSnapFormConfig { method = Just Post }
+        Right (view, ret') ->
+          case ret' of
+            Just success ->
+              -- All went smoothly, so just render back the API result.
+              writeLBS (encode success)
 
+            Nothing -> do
+              -- The client hasn't submitted valid parameters, so we'll render back
+              -- a list of all the parameters that failed validation.
+              modifyResponse (setResponseCode 400)
+              writeLBS (encode $ errorMap view)
+
+
+--------------------------------------------------------------------------------
 errorMap :: View Text -> Map Text Text
 errorMap = Map.fromList . over (mapped._1) (T.intercalate ".") . viewErrors
 
@@ -76,13 +85,12 @@ serviceInit = makeSnaplet "service" "musicbrainz-data HTTP service" Nothing $ do
     , ("password", connectPassword)
     ] $ \(key, def) -> lookupDefault (def defaultConnectInfo) config key
   addRoutes
-    [("/artist/find-latest", expose Artist.findLatest)
-    ,("/artist/create", expose Artist.create)
+    [ ("/artist/find-latest", expose Artist.findLatest)
+    , ("/artist/create", expose Artist.create)
 
-    ,("/label/find-latest", expose Label.findLatest)
+    , ("/label/find-latest", expose Label.findLatest)
 
-    ,("/release-group/find-latest", expose ReleaseGroup.findLatest)
-    ,("/release-group/create", expose ReleaseGroup.create)
+    , ("/release-group/create", expose ReleaseGroup.create)
     ]
 
   Service <$> liftIO (openContext defaultConnectInfo
@@ -91,5 +99,7 @@ serviceInit = makeSnaplet "service" "musicbrainz-data HTTP service" Nothing $ do
     , connectPassword = pass
     })
 
+
+--------------------------------------------------------------------------------
 main :: IO ()
 main = serveSnaplet defaultConfig serviceInit

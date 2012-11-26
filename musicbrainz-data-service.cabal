@@ -11,13 +11,14 @@ executable musicbrainz-data-service
   hs-source-dirs: src
   build-depends:
     aeson,
+    attoparsec,
     base,
     configurator,
     containers,
     lens,
     musicbrainz-data,
     digestive-functors,
-    digestive-functors-snap,
+    digestive-functors-aeson,
     mtl,
     snap,
     snap-core,

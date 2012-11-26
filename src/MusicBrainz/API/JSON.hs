@@ -1,23 +1,26 @@
+{-# LANGUAGE UndecidableInstances #-}
+{-# LANGUAGE FlexibleContexts #-}
 {-# LANGUAGE FlexibleInstances #-}
 {-# LANGUAGE RecordWildCards #-}
 {-# LANGUAGE OverloadedStrings #-}
 module MusicBrainz.API.JSON
     ( ) where
 
+import Control.Lens (view, by)
 import Data.Aeson
 
 import MusicBrainz
 
 --------------------------------------------------------------------------------
 instance ToJSON (MBID a) where
-  toJSON = toJSON . mbidToString
+  toJSON = toJSON . view (by mbid)
 
 
 --------------------------------------------------------------------------------
-instance ToJSON a => ToJSON (CoreEntity a) where
-  toJSON CoreEntity{..} = object [ "mbid" .= coreMbid
-                                 , "data" .= coreData
-                                 ]
+instance (ToJSON a, ToJSON (Ref a)) => ToJSON (CoreEntity a) where
+  toJSON e = object [ "mbid" .= coreRef e
+                    , "data" .= coreData e
+                    ]
 
 
 --------------------------------------------------------------------------------
@@ -67,29 +70,44 @@ instance ToJSON PartialDate where
 
 --------------------------------------------------------------------------------
 instance ToJSON (Ref ArtistCredit) where
-  toJSON (ArtistCreditRef id') = toJSON id'
+  toJSON = toJSON . dereference
+
+
+--------------------------------------------------------------------------------
+instance ToJSON (Ref Artist) where
+  toJSON = toJSON . dereference
 
 
 --------------------------------------------------------------------------------
 instance ToJSON (Ref ArtistType) where
-  toJSON (ArtistTypeRef id') = toJSON id'
+  toJSON = toJSON . dereference
 
 
 --------------------------------------------------------------------------------
 instance ToJSON (Ref Country) where
-  toJSON (CountryRef id') = toJSON id'
+  toJSON = toJSON . dereference
 
 
 --------------------------------------------------------------------------------
 instance ToJSON (Ref Gender) where
-  toJSON (GenderRef id') = toJSON id'
+  toJSON = toJSON . dereference
+
+
+--------------------------------------------------------------------------------
+instance ToJSON (Ref Label) where
+  toJSON = toJSON . dereference
 
 
 --------------------------------------------------------------------------------
 instance ToJSON (Ref LabelType) where
-  toJSON (LabelTypeRef id') = toJSON id'
+  toJSON = toJSON . dereference
+
+
+--------------------------------------------------------------------------------
+instance ToJSON (Ref ReleaseGroup) where
+  toJSON = toJSON . dereference
 
 
 --------------------------------------------------------------------------------
 instance ToJSON (Ref (ReleaseGroupType a)) where
-  toJSON (ReleaseGroupTypeRef id') = toJSON id'
+  toJSON = toJSON . dereference

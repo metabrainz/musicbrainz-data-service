@@ -1,25 +1,19 @@
 {-# LANGUAGE NoMonomorphismRestriction #-}
 {-# LANGUAGE OverloadedStrings #-}
 module MusicBrainz.API.ReleaseGroup
-    ( findLatest
-    , create
+    ( create
     ) where
 
 import           Control.Applicative
 import           Data.Text (Text)
 import           Text.Digestive
 
-import qualified MusicBrainz.Data.ReleaseGroup
-
 import           MusicBrainz
 import           MusicBrainz.API
-import qualified MusicBrainz.API.FindLatest as FindLatest
 
-findLatest :: Monad m => Form Text m (MusicBrainz (Maybe (CoreEntity ReleaseGroup)))
-findLatest = FindLatest.findLatest
+import qualified MusicBrainz.Data as MB
 
-create :: Monad m => Form Text m (MusicBrainz (CoreEntity ReleaseGroup))
-create = do
-  MusicBrainz.Data.ReleaseGroup.create
-    <$> "editor" .: editorRef
-    <*> "release_group" .: releaseGroup
+create :: Form Text MusicBrainz (CoreEntity ReleaseGroup)
+create = runApi $
+  MB.create <$> "editor" .: editorRef
+            <*> (ReleaseGroupTree <$> "release_group" .: releaseGroup)

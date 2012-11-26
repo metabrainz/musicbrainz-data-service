@@ -9,16 +9,22 @@ import           Control.Applicative
 import           Data.Text (Text)
 import           Text.Digestive
 
-import qualified MusicBrainz.Data.Artist
+import qualified Data.Set as Set
+
+import qualified MusicBrainz.Data as Data
 
 import           MusicBrainz
 import           MusicBrainz.API
 import qualified MusicBrainz.API.FindLatest as FindLatest
 
-findLatest :: Monad m => Form Text m (MusicBrainz (Maybe (CoreEntity Artist)))
+findLatest :: Form Text MusicBrainz (Maybe (CoreEntity Artist))
 findLatest = FindLatest.findLatest
 
-create :: Monad m => Form Text m (MusicBrainz (CoreEntity Artist))
-create = do
-  MusicBrainz.Data.Artist.create <$> "editor" .: editorRef
-                                 <*> "artist" .: artist
+create :: Form Text MusicBrainz (CoreEntity Artist)
+create = runApi $ Data.create
+                    <$> "editor" .: editorRef
+                    <*> (ArtistTree <$> "artist" .: artist
+                                    <*> pure Set.empty
+                                    <*> pure Set.empty
+                                    <*> pure Set.empty
+                                    <*> pure "")
