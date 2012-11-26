@@ -1,0 +1,3 @@
+[submodule "musicbrainz-data"]
+	path = musicbrainz-data
+	url = git://github.com/metabrainz/musicbrainz-data.git
