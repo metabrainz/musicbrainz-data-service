@@ -1,6 +1,7 @@
 {-# LANGUAGE FlexibleContexts #-}
 {-# LANGUAGE NoMonomorphismRestriction #-}
 {-# LANGUAGE OverloadedStrings #-}
+{-# LANGUAGE TypeFamilies #-}
 module MusicBrainz.API
     ( -- * Parsers
       mbid
@@ -33,6 +34,7 @@ import MusicBrainz hiding (mbid, labelCode)
 import qualified MusicBrainz as MB
 
 import MusicBrainz.Data
+import MusicBrainz.Data.ArtistCredit
 
 --------------------------------------------------------------------------------
 {-| Parse an MBID parameter. -}
@@ -50,9 +52,17 @@ nonEmptyText =
 
 
 --------------------------------------------------------------------------------
-artistCreditRef :: Monad m => Form Text m (Ref ArtistCredit)
-artistCreditRef = validate (const $ Error "artistCreditRef cannot be implemented until digestive-functors #52 is fixed") $
-  text Nothing
+artistCreditRef :: Form Text MusicBrainz (Ref ArtistCredit)
+artistCreditRef = validateM (fmap Success . getRef) $
+  check "Artist credits cannot be empty" (not . null) $ (listOf artistCreditName)
+  where artistCreditName = ArtistCreditName <$> "artist" .: artistRef
+                                            <*> "name" .: nonEmptyText
+                                            <*> "join-phrase" .: text Nothing
+
+
+--------------------------------------------------------------------------------
+artistRef :: Form Text MusicBrainz (Ref Artist)
+artistRef = mbidRef "Invalid artist reference"
 
 
 --------------------------------------------------------------------------------
@@ -137,6 +147,14 @@ optionalRef e = validateM (maybe (return $ Success Nothing) resolveOptionalRefSp
 ref :: (ResolveReference a, Read (RefSpec a), Show (RefSpec a))
   => Text -> Form Text MusicBrainz (Ref a)
 ref e = validateM resolveRefSpec $ stringRead e Nothing
+
+
+--------------------------------------------------------------------------------
+mbidRef :: (RefSpec a ~ MBID a, ResolveReference a)
+  => Text -> Form Text MusicBrainz (Ref a)
+mbidRef e = validateM resolveRefSpec $
+  validate (maybe (Error e) Success . headOf MB.mbid) $
+    string Nothing
 
 
 --------------------------------------------------------------------------------
