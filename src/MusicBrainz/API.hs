@@ -4,6 +4,7 @@
 module MusicBrainz.API
     ( -- * Parsers
       mbid
+    , nonEmptyText
 
       -- ** Entity reference parsers
     , editorRef

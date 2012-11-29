@@ -24,6 +24,13 @@ instance (ToJSON a, ToJSON (Ref a)) => ToJSON (CoreEntity a) where
 
 
 --------------------------------------------------------------------------------
+instance (ToJSON a, ToJSON (Ref a)) => ToJSON (Entity a) where
+  toJSON e = object [ "ref" .= entityRef e
+                    , "data" .= entityData e
+                    ]
+
+
+--------------------------------------------------------------------------------
 instance ToJSON Artist where
   toJSON Artist{..} = object [ "name" .= artistName
                              , "sort-name" .= artistSortName
@@ -35,6 +42,11 @@ instance ToJSON Artist where
                              , "type" .= artistType
                              , "country" .= artistCountry
                              ]
+
+
+--------------------------------------------------------------------------------
+instance ToJSON Gender where
+  toJSON Gender{..} = object [ "name" .= genderName ]
 
 
 --------------------------------------------------------------------------------
