@@ -45,6 +45,12 @@ instance ToJSON Artist where
 
 
 --------------------------------------------------------------------------------
+instance ToJSON Editor where
+  toJSON Editor{..} = object [ "name" .= editorName
+                             ]
+
+
+--------------------------------------------------------------------------------
 instance ToJSON Gender where
   toJSON Gender{..} = object [ "name" .= genderName ]
 
@@ -97,6 +103,11 @@ instance ToJSON (Ref ArtistType) where
 
 --------------------------------------------------------------------------------
 instance ToJSON (Ref Country) where
+  toJSON = toJSON . dereference
+
+
+--------------------------------------------------------------------------------
+instance ToJSON (Ref Editor) where
   toJSON = toJSON . dereference
 
 

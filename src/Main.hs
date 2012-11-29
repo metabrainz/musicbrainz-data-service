@@ -22,6 +22,7 @@ import           Text.Digestive.View (View, viewErrors)
 import qualified Data.Map as Map
 import qualified Data.Text as T
 import qualified MusicBrainz.API.Artist as Artist
+import qualified MusicBrainz.API.Editor as Editor
 import qualified MusicBrainz.API.Gender as Gender
 import qualified MusicBrainz.API.Label as Label
 import qualified MusicBrainz.API.ReleaseGroup as ReleaseGroup
@@ -87,6 +88,8 @@ serviceInit = makeSnaplet "service" "musicbrainz-data HTTP service" Nothing $ do
   addRoutes
     [ ("/artist/find-latest", expose Artist.findLatest)
     , ("/artist/create", expose Artist.create)
+
+    , ("/editor/register", expose Editor.register)
 
     , ("/gender/add", expose Gender.add)
 
