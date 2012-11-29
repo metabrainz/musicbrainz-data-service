@@ -4,7 +4,7 @@ module Main where
 
 import           Control.Applicative
 import           Control.Exception (SomeException, try)
-import           Control.Lens hiding (view)
+import           Control.Lens hiding (Context, view)
 import           Control.Monad
 import           Control.Monad.IO.Class (liftIO)
 import           Control.Monad.State.Class (gets)
@@ -45,7 +45,7 @@ expose f = do
       -- We run the 'form' that validates the users submitted parameters to the API
       -- call.
       context <- gets svcContext
-      outcome <- liftIO (try (runMbContext context (withTransaction $ digestJSON "api" f json')))
+      outcome <- liftIO (try (runMbContext context (withTransaction $ digestJSON f json')))
       modifyResponse (setContentType "application/json")
       case outcome of
         Left (exception :: SomeException) -> do

@@ -18,7 +18,7 @@ executable musicbrainz-data-service
     lens,
     musicbrainz-data,
     digestive-functors,
-    digestive-functors-aeson,
+    digestive-functors-aeson >= 1.0.0,
     mtl,
     snap,
     snap-core,
