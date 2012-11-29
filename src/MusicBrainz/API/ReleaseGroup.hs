@@ -15,6 +15,6 @@ import qualified MusicBrainz.Data as MB
 
 create :: Form Text MusicBrainz (CoreEntity ReleaseGroup)
 create = runApi $
-  MB.create <$> "editor" .: editorRef
+  MB.create <$> editor
             <*> (ReleaseGroupTree <$> "release_group" .: releaseGroup
                                   <*> pure "")

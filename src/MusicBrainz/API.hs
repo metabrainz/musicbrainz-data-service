@@ -10,10 +10,14 @@ module MusicBrainz.API
 
       -- ** Entities
     , artist
+    , label
     , releaseGroup
 
       -- * Running API Calls
     , runApi
+
+      -- * Prelabelled fields
+    , editor
     ) where
 
 import Control.Applicative
@@ -23,7 +27,7 @@ import Text.Digestive
 
 import qualified Data.Text as T
 
-import MusicBrainz hiding (mbid)
+import MusicBrainz hiding (mbid, labelCode)
 import qualified MusicBrainz as MB
 
 import MusicBrainz.Data
@@ -70,6 +74,11 @@ genderRef = optionalRef "Invalid gender reference"
 
 
 --------------------------------------------------------------------------------
+labelTypeRef :: Form Text MusicBrainz (Maybe (Ref LabelType))
+labelTypeRef = optionalRef "Invalid label type reference"
+
+
+--------------------------------------------------------------------------------
 releaseGroupTypeRef :: ResolveReference (ReleaseGroupType a)
   => Form Text MusicBrainz (Maybe (Ref (ReleaseGroupType a)))
 releaseGroupTypeRef = optionalRef "Invalid release group type reference"
@@ -77,21 +86,35 @@ releaseGroupTypeRef = optionalRef "Invalid release group type reference"
 
 --------------------------------------------------------------------------------
 artist :: Form Text MusicBrainz Artist
-artist = Artist <$> "name" .: nonEmptyText
-                <*> "sort-name" .: nonEmptyText
-                <*> "comment" .: text Nothing
-                <*> pure emptyDate
-                <*> pure emptyDate
-                <*> "ended" .: bool Nothing
+artist = Artist <$> name
+                <*> sortName
+                <*> comment
+                <*> beginDate
+                <*> endDate
+                <*> ended
                 <*> "gender" .: genderRef
                 <*> "type" .: artistTypeRef
                 <*> "country" .: countryRef
 
 
 --------------------------------------------------------------------------------
+label :: Form Text MusicBrainz Label
+label = Label <$> name
+              <*> sortName
+              <*> comment
+              <*> beginDate
+              <*> endDate
+              <*> ended
+              <*> "type" .: labelTypeRef
+              <*> "code" .: labelCode
+  where labelCode = check "Label codes must be positive and at most 5 digits"
+                      (maybe True (\i -> i > 0 && i < 100000)) $
+                        optionalStringRead "Invalid integer" Nothing
+
+--------------------------------------------------------------------------------
 releaseGroup :: Form Text MusicBrainz ReleaseGroup
-releaseGroup = ReleaseGroup <$> "name" .: nonEmptyText
-                            <*> "comment" .: text Nothing
+releaseGroup = ReleaseGroup <$> name
+                            <*> comment
                             <*> "artist_credit" .: artistCreditRef
                             <*> "primary_type" .: releaseGroupTypeRef
 
@@ -132,3 +155,23 @@ resolveRefSpec' ret r = do
   case resolved of
     Nothing -> return $ Error "Reference could not be resolved"
     Just ref' -> return $ Success $ ret ref'
+
+
+--------------------------------------------------------------------------------
+name, sortName :: Monad m => Form Text m Text
+name     = "name" .: nonEmptyText
+sortName = "sort-name" .: nonEmptyText
+
+comment :: Monad m => Form Text m Text
+comment = "comment" .: text Nothing
+
+partialDate, beginDate, endDate :: Monad m => Form Text m PartialDate
+partialDate = pure emptyDate
+beginDate = "begin-date" .: partialDate
+endDate = "end-date" .: partialDate
+
+ended :: Monad m => Form Text m Bool
+ended = "ended" .: bool Nothing
+
+editor :: Form Text MusicBrainz (Ref Editor)
+editor = "editor" .: editorRef

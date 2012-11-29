@@ -87,6 +87,7 @@ serviceInit = makeSnaplet "service" "musicbrainz-data HTTP service" Nothing $ do
     [ ("/artist/find-latest", expose Artist.findLatest)
     , ("/artist/create", expose Artist.create)
 
+    , ("/label/create", expose Label.create)
     , ("/label/find-latest", expose Label.findLatest)
 
     , ("/release-group/create", expose ReleaseGroup.create)

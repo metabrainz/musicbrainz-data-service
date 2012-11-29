@@ -22,7 +22,7 @@ findLatest = FindLatest.findLatest
 
 create :: Form Text MusicBrainz (CoreEntity Artist)
 create = runApi $ Data.create
-                    <$> "editor" .: editorRef
+                    <$> editor
                     <*> (ArtistTree <$> "artist" .: artist
                                     <*> pure Set.empty
                                     <*> pure Set.empty
