@@ -43,6 +43,9 @@ main = defaultMain tests
             , testGroup "/artist-type"
                 [ testAddArtistType
                 ]
+            , testGroup "/editor/register"
+                [ testEditorRegister
+                ]
             ]
 
 
@@ -141,6 +144,19 @@ testAddArtistType = testMb "Can add new artist types" $
         expected =
           Just [aesonQQ| { "data": {"name": "Person"} } |]
             & key "ref" .~ (res ^. key "ref" :: Maybe Int)
+
+
+--------------------------------------------------------------------------------
+testEditorRegister :: Test
+testEditorRegister = testMb "Can register new accounts" $
+  assertApiCall builder assert
+  where
+    builder = postJson "/editor/register" [aesonQQ|{ "name": "ocharles" }|]
+    assert res = liftIO $ res @?= expected
+      where
+        expected = Just [aesonQQ| {
+          "data": {"name": "ocharles"}
+        } |] & key "ref" .~ (res ^. key "ref" :: Maybe Int)
 
 
 --------------------------------------------------------------------------------

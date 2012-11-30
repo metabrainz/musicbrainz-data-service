@@ -95,8 +95,9 @@ serviceInit = serviceInitContext $ do
 serviceInitContext :: Initializer Service Service Context -> SnapletInit Service Service
 serviceInitContext ctxInit = makeSnaplet "service" "musicbrainz-data HTTP service" Nothing $ do
   addRoutes
-    [ ("/artist/find-latest", expose Artist.findLatest)
-    , ("/artist/create", expose Artist.create)
+    [ ("/artist/create", expose Artist.create)
+    , ("/artist/find-latest", expose Artist.findLatest)
+
     , ("/artist-type/add", expose ArtistType.add)
 
     , ("/editor/register", expose Editor.register)
