@@ -43,11 +43,14 @@ main = defaultMain tests
             , testGroup "/artist-type"
                 [ testAddArtistType
                 ]
-            , testGroup "/editor/register"
+            , testGroup "/editor"
                 [ testEditorRegister
                 ]
-            , testGroup "/gender/add"
+            , testGroup "/gender"
                 [ testGenderAdd
+                ]
+            , testGroup "/label"
+                [ testLabelCreate
                 ]
             ]
 
@@ -177,6 +180,41 @@ testGenderAdd = testMb "Can add new genders" $
 
 
 --------------------------------------------------------------------------------
+testLabelCreate :: Test
+testLabelCreate = testMb "Can create labels" $
+  assertApiCall buildRequest assert
+  where
+    buildRequest = do
+      ocharles <- lift $ Editor.register (Editor "ocharles")
+      postJson "/label/create" (testJson ocharles)
+      where
+        testJson editor = [aesonQQ| {
+            "label": {
+              "name": "Warp Records",
+              "sort-name": "Warp Records"
+            },
+            "editor": <| dereference $ entityRef editor |>
+          } |]
+
+    assert actual = do
+      liftIO $ actual @?= expected
+      where
+        expected = Just [aesonQQ| {
+            "mbid": null,
+            "data": {
+              "name": "Warp Records",
+              "sort-name": "Warp Records",
+              "begin-date": {"year": null, "day": null, "month": null},
+              "end-date": {"year": null, "day": null, "month": null},
+              "ended": false,
+              "type": null,
+              "comment": "",
+              "label-code": null
+            }
+          } |] & key "mbid" .~ (actual ^. key "mbid" :: Maybe String)
+
+
+--------------------------------------------------------------------------------
 postJson :: MonadIO m => BS.ByteString -> Value -> RequestBuilder m ()
 postJson endPoint = postRaw endPoint "application/json" . toStrict . encode
 
@@ -203,6 +241,7 @@ testMb label action = testCase label . runTest . void $ cleanState >> action
       , "TRUNCATE gender CASCADE"
       , "ALTER SEQUENCE revision_revision_id_seq RESTART 1"
       ] $ \q -> execute q ()
+
 
 --------------------------------------------------------------------------------
 assertApiCall :: RequestBuilder MusicBrainz () -> (Maybe Value -> MusicBrainz a) -> MusicBrainz a
