@@ -14,6 +14,7 @@ import           Data.Aeson.Lens
 import           Data.Aeson.QQ (aesonQQ)
 import qualified Data.ByteString as BS
 import qualified Data.ByteString.Lazy as LBS
+import qualified Data.Set as Set
 import           Data.Text
 import           Snap.Core
 import           Snap.Snaplet (runSnaplet)
@@ -23,6 +24,7 @@ import           Test.Framework.Providers.HUnit (testCase)
 import           Test.HUnit hiding (Test, assert)
 
 import           MusicBrainz
+import qualified MusicBrainz.Data as Data
 import qualified MusicBrainz.Data.Editor as Editor
 import           MusicBrainz.Service (serviceInitContext)
 
@@ -36,6 +38,7 @@ main = defaultMain tests
   where
     tests = [ testGroup "/artist"
                 [ testArtistCreate
+                , testArtistFindLatest
                 ]
             , testGroup "/artist-type"
                 [ testAddArtistType
@@ -45,7 +48,8 @@ main = defaultMain tests
 
 --------------------------------------------------------------------------------
 testArtistCreate :: Test
-testArtistCreate = testApiCall "Can create artists" buildRequest assert
+testArtistCreate = testMb "Can create artists" $
+  assertApiCall buildRequest assert
   where
     buildRequest = do
       ocharles <- lift $ Editor.register (Editor "ocharles")
@@ -79,8 +83,56 @@ testArtistCreate = testApiCall "Can create artists" buildRequest assert
 
 
 --------------------------------------------------------------------------------
+testArtistFindLatest :: Test
+testArtistFindLatest = testMb "Can find existing artist" $ do
+  artist <- do
+    ocharles <- Editor.register (Editor "ocharles")
+    Data.create (entityRef ocharles) artistTree
+  assertApiCall (buildRequest artist) (assert artist)
+  where
+    buildRequest artist = do
+      postJson "/artist/find-latest"
+        [aesonQQ|{ "mbid": <| dereference (coreRef artist) ^. by mbid |> }|]
+
+    artistTree = ArtistTree { artistData = Artist { artistName = "Massive Attack"
+                                                  , artistSortName = "Massive Attack"
+                                                  , artistComment = ""
+                                                  , artistBeginDate = emptyDate
+                                                  , artistEndDate = emptyDate
+                                                  , artistEnded = False
+                                                  , artistGender = Nothing
+                                                  , artistType = Nothing
+                                                  , artistCountry = Nothing
+                                                  }
+                            , artistRelationships = Set.empty
+                            , artistAliases = Set.empty
+                            , artistIpiCodes = Set.empty
+                            , artistAnnotation = ""
+                            }
+
+    assert artist res =
+      liftIO $ res @?= expected
+      where
+        expected = Just [aesonQQ| {
+            "mbid": <| dereference (coreRef artist) ^. by mbid |>,
+            "data": {
+              "name": "Massive Attack",
+              "sort-name": "Massive Attack",
+              "begin-date": {"year": null, "day": null, "month": null},
+              "end-date": {"year": null, "day": null, "month": null},
+              "ended": false,
+              "type": null,
+              "country": null,
+              "comment": "",
+              "gender": null
+            }
+          } |]
+
+
+--------------------------------------------------------------------------------
 testAddArtistType :: Test
-testAddArtistType = testApiCall "Can add new artist types" buildRequest assert
+testAddArtistType = testMb "Can add new artist types" $
+  assertApiCall buildRequest assert
   where
     buildRequest = postJson "/artist-type/add" [aesonQQ|{ "name": "Person" }|]
     assert res =
@@ -107,11 +159,9 @@ apiCall rb = do
 
 
 --------------------------------------------------------------------------------
-testApiCall :: String -> RequestBuilder MusicBrainz () -> (Maybe Value -> MusicBrainz a) -> Test
-testApiCall label buildRequest verifyJson = testCase label $ runTest $ void $ do
-  cleanState >> apiCall buildRequest >>= verify
+testMb :: String -> MusicBrainz a -> Test
+testMb label action = testCase label . runTest . void $ cleanState >> action
   where
-    verify r = liftIO (getResponseBody r) >>= \body -> verifyJson $ decode (fromStrict body)
     cleanState = forM_
       [ "SET client_min_messages TO warning"
       , "TRUNCATE artist_type CASCADE"
@@ -119,8 +169,13 @@ testApiCall label buildRequest verifyJson = testCase label $ runTest $ void $ do
       , "TRUNCATE editor CASCADE"
       , "TRUNCATE gender CASCADE"
       , "ALTER SEQUENCE revision_revision_id_seq RESTART 1"
-      , "COMMIT"
       ] $ \q -> execute q ()
+
+--------------------------------------------------------------------------------
+assertApiCall :: RequestBuilder MusicBrainz () -> (Maybe Value -> MusicBrainz a) -> MusicBrainz a
+assertApiCall buildRequest verifyJson = apiCall buildRequest >>= verify
+  where
+    verify r = liftIO (getResponseBody r) >>= \body -> verifyJson $ decode (fromStrict body)
 
 
 --------------------------------------------------------------------------------
