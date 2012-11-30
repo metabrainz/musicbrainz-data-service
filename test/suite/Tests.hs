@@ -58,7 +58,7 @@ main = defaultMain tests
 
 --------------------------------------------------------------------------------
 testArtistCreate :: Test
-testArtistCreate = testMb "Can create artists" $
+testArtistCreate = testMb "/create" $
   assertApiCall buildRequest assert
   where
     buildRequest = do
@@ -94,7 +94,7 @@ testArtistCreate = testMb "Can create artists" $
 
 --------------------------------------------------------------------------------
 testArtistFindLatest :: Test
-testArtistFindLatest = testMb "Can find existing artist" $ do
+testArtistFindLatest = testMb "/find-latest" $ do
   artist <- do
     ocharles <- Editor.register (Editor "ocharles")
     Data.create (entityRef ocharles) artistTree
@@ -141,7 +141,7 @@ testArtistFindLatest = testMb "Can find existing artist" $ do
 
 --------------------------------------------------------------------------------
 testAddArtistType :: Test
-testAddArtistType = testMb "Can add new artist types" $
+testAddArtistType = testMb "/add" $
   assertApiCall buildRequest assert
   where
     buildRequest = postJson "/artist-type/add" [aesonQQ|{ "name": "Person" }|]
@@ -155,7 +155,7 @@ testAddArtistType = testMb "Can add new artist types" $
 
 --------------------------------------------------------------------------------
 testEditorRegister :: Test
-testEditorRegister = testMb "Can register new accounts" $
+testEditorRegister = testMb "/register" $
   assertApiCall builder assert
   where
     builder = postJson "/editor/register" [aesonQQ|{ "name": "ocharles" }|]
@@ -168,7 +168,7 @@ testEditorRegister = testMb "Can register new accounts" $
 
 --------------------------------------------------------------------------------
 testGenderAdd :: Test
-testGenderAdd = testMb "Can add new genders" $
+testGenderAdd = testMb "/add" $
   assertApiCall buildRequest assert
   where
     buildRequest = postJson "/gender/add" [aesonQQ|{ "name": "Female" }|]
@@ -182,7 +182,7 @@ testGenderAdd = testMb "Can add new genders" $
 
 --------------------------------------------------------------------------------
 testLabelCreate :: Test
-testLabelCreate = testMb "Can create labels" $
+testLabelCreate = testMb "/create" $
   assertApiCall buildRequest assert
   where
     buildRequest = do
@@ -217,7 +217,7 @@ testLabelCreate = testMb "Can create labels" $
 
 --------------------------------------------------------------------------------
 testLabelFindLatest :: Test
-testLabelFindLatest = testMb "Can find existing label" $ do
+testLabelFindLatest = testMb "/find-latest" $ do
   label <- do
     ocharles <- Editor.register (Editor "ocharles")
     Data.create (entityRef ocharles) labelTree
