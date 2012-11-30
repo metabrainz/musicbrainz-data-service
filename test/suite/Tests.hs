@@ -21,7 +21,7 @@ import           Snap.Snaplet (runSnaplet)
 import           Snap.Test hiding (buildRequest)
 import           Test.Framework (defaultMain, testGroup, Test)
 import           Test.Framework.Providers.HUnit (testCase)
-import           Test.HUnit hiding (Test, assert)
+import           Test.HUnit hiding (Label, Test, assert)
 
 import           MusicBrainz
 import qualified MusicBrainz.Data as Data
@@ -51,6 +51,7 @@ main = defaultMain tests
                 ]
             , testGroup "/label"
                 [ testLabelCreate
+                , testLabelFindLatest
                 ]
             ]
 
@@ -212,6 +213,50 @@ testLabelCreate = testMb "Can create labels" $
               "label-code": null
             }
           } |] & key "mbid" .~ (actual ^. key "mbid" :: Maybe String)
+
+
+--------------------------------------------------------------------------------
+testLabelFindLatest :: Test
+testLabelFindLatest = testMb "Can find existing label" $ do
+  label <- do
+    ocharles <- Editor.register (Editor "ocharles")
+    Data.create (entityRef ocharles) labelTree
+  assertApiCall (buildRequest label) (assert label)
+  where
+    buildRequest label = do
+      postJson "/label/find-latest"
+        [aesonQQ|{ "mbid": <| dereference (coreRef label) ^. by mbid |> }|]
+
+    labelTree = LabelTree { labelData = Label { labelName = "Warp Records"
+                                                  , labelSortName = "Warp Records"
+                                                  , labelComment = ""
+                                                  , labelBeginDate = emptyDate
+                                                  , labelEndDate = emptyDate
+                                                  , labelEnded = False
+                                                  , labelCode = Nothing
+                                                  , labelType = Nothing
+                                                  }
+                            , labelAliases = Set.empty
+                            , labelIpiCodes = Set.empty
+                            , labelAnnotation = ""
+                            }
+
+    assert label res =
+      liftIO $ res @?= expected
+      where
+        expected = Just [aesonQQ| {
+            "mbid": <| dereference (coreRef label) ^. by mbid |>,
+            "data": {
+              "name": "Warp Records",
+              "sort-name": "Warp Records",
+              "begin-date": {"year": null, "day": null, "month": null},
+              "end-date": {"year": null, "day": null, "month": null},
+              "ended": false,
+              "type": null,
+              "comment": "",
+              "label-code": null
+            }
+          } |]
 
 
 --------------------------------------------------------------------------------
