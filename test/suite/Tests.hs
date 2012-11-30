@@ -46,6 +46,9 @@ main = defaultMain tests
             , testGroup "/editor/register"
                 [ testEditorRegister
                 ]
+            , testGroup "/gender/add"
+                [ testGenderAdd
+                ]
             ]
 
 
@@ -157,6 +160,20 @@ testEditorRegister = testMb "Can register new accounts" $
         expected = Just [aesonQQ| {
           "data": {"name": "ocharles"}
         } |] & key "ref" .~ (res ^. key "ref" :: Maybe Int)
+
+
+--------------------------------------------------------------------------------
+testGenderAdd :: Test
+testGenderAdd = testMb "Can add new genders" $
+  assertApiCall buildRequest assert
+  where
+    buildRequest = postJson "/gender/add" [aesonQQ|{ "name": "Female" }|]
+    assert res =
+      liftIO $ res @?= expected
+      where
+        expected =
+          Just [aesonQQ| { "data": {"name": "Female"} } |]
+            & key "ref" .~ (res ^. key "ref" :: Maybe Int)
 
 
 --------------------------------------------------------------------------------
