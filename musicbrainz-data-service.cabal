@@ -12,6 +12,7 @@ executable musicbrainz-data-service
   hs-source-dirs: src
   build-depends:
     aeson,
+    aeson-lens,
     base,
     configurator,
     containers,
@@ -20,6 +21,7 @@ executable musicbrainz-data-service
     lens,
     mtl,
     musicbrainz-data,
+    safe,
     snap,
     snap-core,
     snap-server,
@@ -52,6 +54,7 @@ Test-Suite tests
     MonadCatchIO-mtl >= 0.3.0.0 && <0.4,
     mtl,
     musicbrainz-data,
+    safe,
     snap,
     snap-core,
     test-framework,

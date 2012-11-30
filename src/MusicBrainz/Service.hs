@@ -8,10 +8,12 @@ import           Control.Lens hiding (Context, view)
 import           Control.Monad
 import           Control.Monad.IO.Class (liftIO)
 import           Control.Monad.State.Class (gets)
-import           Data.Aeson (decode, encode, ToJSON, Value)
+import           Data.Aeson (decode, encode, object, ToJSON(toJSON), Value)
+import           Data.Aeson.Lens
 import           Data.Configurator (lookupDefault)
-import           Data.Map (Map)
+import           Data.Maybe (fromMaybe)
 import           Data.Text (Text)
+import           Safe
 import           Snap (Initializer, SnapletInit, makeSnaplet, Handler, getSnapletUserConfig, addRoutes)
 import           Snap.Core (writeLBS, setContentType, modifyResponse, setResponseCode, readRequestBody)
 import           Text.Digestive (Form)
@@ -71,8 +73,13 @@ expose f = do
 
 
 --------------------------------------------------------------------------------
-errorMap :: View Text -> Map Text Text
-errorMap = Map.fromList . over (mapped._1) (T.intercalate ".") . viewErrors
+errorMap :: View Text -> Value
+errorMap = fromMaybe (error "Constructing error tree failed!") .
+    foldl encodeError (Just $ object []) . viewErrors
+  where
+    encodeError json (path, message) = json & pathToLens path .~ Just (toJSON message)
+    pathToLens = foldl (.) id . map pathElem
+    pathElem p = maybe (key p) nth (readMay $ T.unpack p)
 
 
 --------------------------------------------------------------------------------
@@ -85,7 +92,7 @@ serviceInit = serviceInitContext $ do
     [ ("database", connectDatabase)
     , ("username", connectUser)
     , ("password", connectPassword)
-    ] $ \(key, def) -> lookupDefault (def defaultConnectInfo) config key
+    ] $ \(k, def) -> lookupDefault (def defaultConnectInfo) config k
   liftIO (openContext defaultConnectInfo
     { connectDatabase = db
     , connectUser = user
