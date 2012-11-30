@@ -93,7 +93,7 @@ testAddArtistType = testApiCall "Can add new artist types" buildRequest assert
 
 --------------------------------------------------------------------------------
 postJson :: MonadIO m => BS.ByteString -> Value -> RequestBuilder m ()
-postJson endPoint = postRaw endPoint "application/json" . LBS.toStrict . encode
+postJson endPoint = postRaw endPoint "application/json" . toStrict . encode
 
 
 --------------------------------------------------------------------------------
@@ -111,7 +111,7 @@ testApiCall :: String -> RequestBuilder MusicBrainz () -> (Maybe Value -> MusicB
 testApiCall label buildRequest verifyJson = testCase label $ runTest $ void $ do
   cleanState >> apiCall buildRequest >>= verify
   where
-    verify r = liftIO (getResponseBody r) >>= \body -> verifyJson $ decode (LBS.fromStrict body)
+    verify r = liftIO (getResponseBody r) >>= \body -> verifyJson $ decode (fromStrict body)
     cleanState = forM_
       [ "SET client_min_messages TO warning"
       , "TRUNCATE artist_type CASCADE"
@@ -130,3 +130,11 @@ runTest a = runMb databaseSettings $
   where databaseSettings = defaultConnectInfo { connectDatabase = "musicbrainz_nes"
                                               , connectUser = "musicbrainz"
                                               }
+
+
+--------------------------------------------------------------------------------
+fromStrict :: BS.ByteString -> LBS.ByteString
+fromStrict x = LBS.fromChunks [x]
+
+toStrict :: LBS.ByteString -> BS.ByteString
+toStrict = BS.concat . LBS.toChunks

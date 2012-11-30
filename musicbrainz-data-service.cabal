@@ -42,7 +42,7 @@ Test-Suite tests
     aeson-lens,
     aeson-qq,
     base >= 4.5 && < 4.7,
-    bytestring >= 0.10.2.0,
+    bytestring,
     configurator,
     containers,
     digestive-functors,
