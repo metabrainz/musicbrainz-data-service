@@ -45,6 +45,11 @@ instance ToJSON Artist where
 
 
 --------------------------------------------------------------------------------
+instance ToJSON ArtistType where
+  toJSON ArtistType{..} = object [ "name" .= artistTypeName ]
+
+
+--------------------------------------------------------------------------------
 instance ToJSON Editor where
   toJSON Editor{..} = object [ "name" .= editorName
                              ]

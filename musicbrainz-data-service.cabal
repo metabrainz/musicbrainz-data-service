@@ -4,22 +4,22 @@ license: GPL-2
 license-file: LICENSE
 author: MetaBrainz Foundation
 build-type: Simple
-cabal-version: >=1.8
+cabal-version: >=1.10
 
 executable musicbrainz-data-service
+  default-language: Haskell2010
   main-is: Main.hs
   hs-source-dirs: src
   build-depends:
     aeson,
-    attoparsec,
     base,
     configurator,
     containers,
-    lens,
-    musicbrainz-data,
     digestive-functors,
     digestive-functors-aeson >= 1.0.0,
+    lens,
     mtl,
+    musicbrainz-data,
     snap,
     snap-core,
     snap-server,
@@ -28,4 +28,37 @@ executable musicbrainz-data-service
   ghc-options: -Wall -fwarn-tabs -funbox-strict-fields -O2
                -fno-warn-orphans -fno-warn-unused-do-bind
                -threaded -rtsopts
+
+
+Test-Suite tests
+  default-language: Haskell2010
+  type: exitcode-stdio-1.0
+  main-is: Tests.hs
+  hs-source-dirs:
+    test/suite
+    src
+  build-depends:
+    aeson,
+    aeson-lens,
+    aeson-qq,
+    base >= 4.5 && < 4.7,
+    bytestring,
+    configurator,
+    containers,
+    digestive-functors,
+    digestive-functors-aeson >= 1.0.0,
+    HUnit,
+    lens,
+    MonadCatchIO-mtl >= 0.3.0.0 && <0.4,
+    mtl,
+    musicbrainz-data,
+    snap,
+    snap-core,
+    test-framework,
+    test-framework-hunit,
+    text,
+    transformers,
+    unordered-containers
+  ghc-options: -Wall -fwarn-tabs -funbox-strict-fields -O2
+               -fno-warn-orphans -fno-warn-unused-do-bind
 
