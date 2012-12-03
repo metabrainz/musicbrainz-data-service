@@ -16,7 +16,7 @@ executable musicbrainz-data-service
     base,
     configurator,
     containers,
-    digestive-functors,
+    digestive-functors >= 0.6,
     digestive-functors-aeson >= 1.0.0,
     lens,
     mtl,
