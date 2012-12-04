@@ -3,10 +3,8 @@
 {-# LANGUAGE QuasiQuotes #-}
 module Main where
 
-import           Control.Applicative
 import           Control.Lens
 import           Control.Monad (forM_, void)
-import           Control.Monad.CatchIO
 import           Control.Monad.Reader (ask)
 import           Control.Monad.Trans
 import           Data.Aeson (decode, encode)
@@ -34,7 +32,7 @@ import           Data.Aeson.Types (Value(..))
 
 --------------------------------------------------------------------------------
 main :: IO ()
-main = defaultMain tests
+main = cleanState >> defaultMain tests
   where
     tests = [ testGroup "/artist"
                 [ testArtistCreate
@@ -54,6 +52,15 @@ main = defaultMain tests
                 , testLabelFindLatest
                 ]
             ]
+    cleanState = runTest $ forM_
+      [ "SET client_min_messages TO warning"
+      , "TRUNCATE artist_type CASCADE"
+      , "TRUNCATE country CASCADE"
+      , "TRUNCATE editor CASCADE"
+      , "TRUNCATE gender CASCADE"
+      , "ALTER SEQUENCE revision_revision_id_seq RESTART 1"
+      , "COMMIT"
+      ] $ \q -> execute q ()
 
 
 --------------------------------------------------------------------------------
@@ -276,16 +283,7 @@ apiCall rb = do
 
 --------------------------------------------------------------------------------
 testMb :: String -> MusicBrainz a -> Test
-testMb label action = testCase label . runTest . void $ cleanState >> action
-  where
-    cleanState = forM_
-      [ "SET client_min_messages TO warning"
-      , "TRUNCATE artist_type CASCADE"
-      , "TRUNCATE country CASCADE"
-      , "TRUNCATE editor CASCADE"
-      , "TRUNCATE gender CASCADE"
-      , "ALTER SEQUENCE revision_revision_id_seq RESTART 1"
-      ] $ \q -> execute q ()
+testMb label action = testCase label . runTest . void $ action
 
 
 --------------------------------------------------------------------------------
@@ -297,8 +295,7 @@ assertApiCall buildRequest verifyJson = apiCall buildRequest >>= verify
 
 --------------------------------------------------------------------------------
 runTest :: MusicBrainz a -> IO a
-runTest a = runMb databaseSettings $
-  begin *> a `onException` rollback <* rollback
+runTest = runMb databaseSettings . withTransactionRollBack
   where databaseSettings = defaultConnectInfo { connectDatabase = "musicbrainz_nes"
                                               , connectUser = "musicbrainz"
                                               }
