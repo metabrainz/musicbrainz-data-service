@@ -10,11 +10,17 @@ import           Text.Digestive
 
 import           MusicBrainz
 import           MusicBrainz.API
+import           MusicBrainz.Data.Edit
 
 import qualified MusicBrainz.Data as MB
 
-create :: Form Text MusicBrainz (CoreEntity ReleaseGroup)
-create = runApi $
-  MB.create <$> editor
-            <*> (ReleaseGroupTree <$> "release_group" .: releaseGroup
-                                  <*> pure "")
+create :: Form Text MusicBrainz (Ref (Revision ReleaseGroup))
+create =
+  runApi $
+    withEdit
+      <$> "edit" .: edit
+      <*> (MB.create
+             <$> editor
+             <*> (ReleaseGroupTree
+                    <$> "release_group" .: releaseGroup
+                    <*> pure ""))

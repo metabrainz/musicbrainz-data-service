@@ -8,6 +8,7 @@ module MusicBrainz.API
     , nonEmptyText
 
       -- ** Entity reference parsers
+    , edit
     , editorRef
 
       -- ** Entities
@@ -164,16 +165,29 @@ name, sortName :: Monad m => Form Text m Text
 name     = "name" .: nonEmptyText
 sortName = "sort-name" .: nonEmptyText
 
+--------------------------------------------------------------------------------
 comment :: Monad m => Form Text m Text
 comment = "comment" .: text Nothing
 
+
+--------------------------------------------------------------------------------
 partialDate, beginDate, endDate :: Monad m => Form Text m PartialDate
 partialDate = pure emptyDate
 beginDate = "begin-date" .: partialDate
 endDate = "end-date" .: partialDate
 
+
+--------------------------------------------------------------------------------
 ended :: Monad m => Form Text m Bool
 ended = "ended" .: bool Nothing
 
+
+--------------------------------------------------------------------------------
 editor :: Form Text MusicBrainz (Ref Editor)
 editor = "editor" .: editorRef
+
+
+--------------------------------------------------------------------------------
+edit :: Form Text MusicBrainz (Ref Edit)
+edit = "edit" .: editRef
+  where editRef = ref "Invalid edit reference"

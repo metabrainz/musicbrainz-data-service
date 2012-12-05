@@ -10,7 +10,7 @@ import Text.Digestive
 
 import MusicBrainz
 import MusicBrainz.API
-import MusicBrainz.Data.ArtistType
+import qualified MusicBrainz.Data as MB
 
 add :: Form Text MusicBrainz (Entity ArtistType)
-add = runApi $ addArtistType <$> (ArtistType <$> name)
+add = runApi $ MB.add <$> (ArtistType <$> name)

@@ -3,12 +3,12 @@
 {-# LANGUAGE QuasiQuotes #-}
 module Main where
 
+import           Control.Applicative
 import           Control.Lens
 import           Control.Monad (forM_, void)
 import           Control.Monad.Reader (ask)
 import           Control.Monad.Trans
-import           Data.Aeson (decode, encode)
-import           Data.Aeson.Lens
+import           Data.Aeson (encode)
 import           Data.Aeson.QQ (aesonQQ)
 import qualified Data.ByteString as BS
 import qualified Data.ByteString.Lazy as LBS
@@ -19,10 +19,11 @@ import           Snap.Snaplet (runSnaplet)
 import           Snap.Test hiding (buildRequest)
 import           Test.Framework (defaultMain, testGroup, Test)
 import           Test.Framework.Providers.HUnit (testCase)
-import           Test.HUnit hiding (Label, Test, assert)
 
 import           MusicBrainz
+import           MusicBrainz.Edit
 import qualified MusicBrainz.Data as Data
+import qualified MusicBrainz.Data.Edit as Data
 import qualified MusicBrainz.Data.Editor as Editor
 import           MusicBrainz.Service (serviceInitContext)
 
@@ -66,37 +67,21 @@ main = cleanState >> defaultMain tests
 --------------------------------------------------------------------------------
 testArtistCreate :: Test
 testArtistCreate = testMb "/create" $
-  assertApiCall buildRequest assert
+  assertApiCall buildRequest
   where
     buildRequest = do
       ocharles <- lift $ Editor.register (Editor "ocharles")
-      postJson "/artist/create" (testJson ocharles)
+      editId <- lift $ Data.openEdit
+      postJson "/artist/create" (testJson ocharles editId)
       where
-        testJson editor = [aesonQQ| {
+        testJson editor editId = [aesonQQ| {
             "artist": {
               "name": "Massive Attack",
               "sort-name": "Massive Attack"
             },
-            "editor": <| dereference $ entityRef editor |>
+            "editor": <| dereference $ entityRef editor |>,
+            "edit": <| dereference editId |>
           } |]
-
-    assert actual = do
-      liftIO $ actual @?= expected
-      where
-        expected = Just [aesonQQ| {
-            "mbid": null,
-            "data": {
-              "name": "Massive Attack",
-              "sort-name": "Massive Attack",
-              "begin-date": {"year": null, "day": null, "month": null},
-              "end-date": {"year": null, "day": null, "month": null},
-              "ended": false,
-              "type": null,
-              "country": null,
-              "comment": "",
-              "gender": null
-            }
-          } |] & key "mbid" .~ (actual ^. key "mbid" :: Maybe String)
 
 
 --------------------------------------------------------------------------------
@@ -104,8 +89,8 @@ testArtistFindLatest :: Test
 testArtistFindLatest = testMb "/find-latest" $ do
   artist <- do
     ocharles <- Editor.register (Editor "ocharles")
-    Data.create (entityRef ocharles) artistTree
-  assertApiCall (buildRequest artist) (assert artist)
+    autoEdit $ Data.create (entityRef ocharles) artistTree >>= viewRevision
+  assertApiCall (buildRequest artist)
   where
     buildRequest artist = do
       postJson "/artist/find-latest"
@@ -127,99 +112,49 @@ testArtistFindLatest = testMb "/find-latest" $ do
                             , artistAnnotation = ""
                             }
 
-    assert artist res =
-      liftIO $ res @?= expected
-      where
-        expected = Just [aesonQQ| {
-            "mbid": <| dereference (coreRef artist) ^. by mbid |>,
-            "data": {
-              "name": "Massive Attack",
-              "sort-name": "Massive Attack",
-              "begin-date": {"year": null, "day": null, "month": null},
-              "end-date": {"year": null, "day": null, "month": null},
-              "ended": false,
-              "type": null,
-              "country": null,
-              "comment": "",
-              "gender": null
-            }
-          } |]
-
 
 --------------------------------------------------------------------------------
 testAddArtistType :: Test
 testAddArtistType = testMb "/add" $
-  assertApiCall buildRequest assert
+  assertApiCall buildRequest
   where
     buildRequest = postJson "/artist-type/add" [aesonQQ|{ "name": "Person" }|]
-    assert res =
-      liftIO $ res @?= expected
-      where
-        expected =
-          Just [aesonQQ| { "data": {"name": "Person"} } |]
-            & key "ref" .~ (res ^. key "ref" :: Maybe Int)
 
 
 --------------------------------------------------------------------------------
 testEditorRegister :: Test
 testEditorRegister = testMb "/register" $
-  assertApiCall builder assert
+  assertApiCall builder
   where
     builder = postJson "/editor/register" [aesonQQ|{ "name": "ocharles" }|]
-    assert res = liftIO $ res @?= expected
-      where
-        expected = Just [aesonQQ| {
-          "data": {"name": "ocharles"}
-        } |] & key "ref" .~ (res ^. key "ref" :: Maybe Int)
 
 
 --------------------------------------------------------------------------------
 testGenderAdd :: Test
 testGenderAdd = testMb "/add" $
-  assertApiCall buildRequest assert
+  assertApiCall buildRequest
   where
     buildRequest = postJson "/gender/add" [aesonQQ|{ "name": "Female" }|]
-    assert res =
-      liftIO $ res @?= expected
-      where
-        expected =
-          Just [aesonQQ| { "data": {"name": "Female"} } |]
-            & key "ref" .~ (res ^. key "ref" :: Maybe Int)
 
 
 --------------------------------------------------------------------------------
 testLabelCreate :: Test
 testLabelCreate = testMb "/create" $
-  assertApiCall buildRequest assert
+  assertApiCall buildRequest
   where
     buildRequest = do
       ocharles <- lift $ Editor.register (Editor "ocharles")
-      postJson "/label/create" (testJson ocharles)
+      editId <- lift $ Data.openEdit
+      postJson "/label/create" (testJson ocharles editId)
       where
-        testJson editor = [aesonQQ| {
+        testJson editor editId = [aesonQQ| {
             "label": {
               "name": "Warp Records",
               "sort-name": "Warp Records"
             },
-            "editor": <| dereference $ entityRef editor |>
+            "editor": <| dereference $ entityRef editor |>,
+            "edit": <| dereference editId |>
           } |]
-
-    assert actual = do
-      liftIO $ actual @?= expected
-      where
-        expected = Just [aesonQQ| {
-            "mbid": null,
-            "data": {
-              "name": "Warp Records",
-              "sort-name": "Warp Records",
-              "begin-date": {"year": null, "day": null, "month": null},
-              "end-date": {"year": null, "day": null, "month": null},
-              "ended": false,
-              "type": null,
-              "comment": "",
-              "label-code": null
-            }
-          } |] & key "mbid" .~ (actual ^. key "mbid" :: Maybe String)
 
 
 --------------------------------------------------------------------------------
@@ -227,8 +162,8 @@ testLabelFindLatest :: Test
 testLabelFindLatest = testMb "/find-latest" $ do
   label <- do
     ocharles <- Editor.register (Editor "ocharles")
-    Data.create (entityRef ocharles) labelTree
-  assertApiCall (buildRequest label) (assert label)
+    autoEdit $ Data.create (entityRef ocharles) labelTree >>= viewRevision
+  assertApiCall (buildRequest label)
   where
     buildRequest label = do
       postJson "/label/find-latest"
@@ -248,37 +183,10 @@ testLabelFindLatest = testMb "/find-latest" $ do
                             , labelAnnotation = ""
                             }
 
-    assert label res =
-      liftIO $ res @?= expected
-      where
-        expected = Just [aesonQQ| {
-            "mbid": <| dereference (coreRef label) ^. by mbid |>,
-            "data": {
-              "name": "Warp Records",
-              "sort-name": "Warp Records",
-              "begin-date": {"year": null, "day": null, "month": null},
-              "end-date": {"year": null, "day": null, "month": null},
-              "ended": false,
-              "type": null,
-              "comment": "",
-              "label-code": null
-            }
-          } |]
-
 
 --------------------------------------------------------------------------------
 postJson :: MonadIO m => BS.ByteString -> Value -> RequestBuilder m ()
 postJson endPoint = postRaw endPoint "application/json" . toStrict . encode
-
-
---------------------------------------------------------------------------------
-apiCall :: RequestBuilder MusicBrainz () -> MusicBrainz Response
-apiCall rb = do
-  ctx <- ask
-  (_, snap, _) <- liftIO $ runSnaplet (Just "autotest") (serviceInitContext (return ctx))
-  r <- runHandler rb snap
-  liftIO $ assertSuccess r
-  return r
 
 
 --------------------------------------------------------------------------------
@@ -287,10 +195,13 @@ testMb label action = testCase label . runTest . void $ action
 
 
 --------------------------------------------------------------------------------
-assertApiCall :: RequestBuilder MusicBrainz () -> (Maybe Value -> MusicBrainz a) -> MusicBrainz a
-assertApiCall buildRequest verifyJson = apiCall buildRequest >>= verify
-  where
-    verify r = liftIO (getResponseBody r) >>= \body -> verifyJson $ decode (fromStrict body)
+assertApiCall :: RequestBuilder MusicBrainz () -> MusicBrainz Response
+assertApiCall buildRequest = do
+  ctx <- ask
+  (_, snap, _) <- liftIO $ runSnaplet (Just "autotest") (serviceInitContext (return ctx))
+  r <- runHandler buildRequest snap
+  liftIO $ assertSuccess r
+  return r
 
 
 --------------------------------------------------------------------------------
@@ -307,3 +218,10 @@ fromStrict x = LBS.fromChunks [x]
 
 toStrict :: LBS.ByteString -> BS.ByteString
 toStrict = BS.concat . LBS.toChunks
+
+
+--------------------------------------------------------------------------------
+autoEdit :: EditM a -> MusicBrainz a
+autoEdit action = do
+  editId <- Data.openEdit
+  Data.withEdit editId action <* Data.apply editId

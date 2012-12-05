@@ -4,24 +4,18 @@ module MusicBrainz.Service (serviceInit, serviceInitContext) where
 
 import           Control.Applicative
 import           Control.Exception (SomeException, try)
-import           Control.Lens hiding (Context, view)
 import           Control.Monad
 import           Control.Monad.IO.Class (liftIO)
 import           Control.Monad.State.Class (gets)
-import           Data.Aeson (decode, encode, object, ToJSON(toJSON), Value)
-import           Data.Aeson.Lens
+import           Data.Aeson (decode, encode, ToJSON, Value)
 import           Data.Configurator (lookupDefault)
-import           Data.Maybe (fromMaybe)
 import           Data.Text (Text)
-import           Safe
 import           Snap (Initializer, SnapletInit, makeSnaplet, Handler, getSnapletUserConfig, addRoutes)
 import           Snap.Core (writeLBS, setContentType, modifyResponse, setResponseCode, readRequestBody)
 import           Text.Digestive (Form)
-import           Text.Digestive.Aeson (digestJSON)
-import           Text.Digestive.View (View, viewErrors)
+import           Text.Digestive.Aeson (digestJSON, jsonErrors)
 
 import qualified Data.Map as Map
-import qualified Data.Text as T
 import qualified MusicBrainz.API.Artist as Artist
 import qualified MusicBrainz.API.ArtistType as ArtistType
 import qualified MusicBrainz.API.Editor as Editor
@@ -69,17 +63,7 @@ expose f = do
               -- The client hasn't submitted valid parameters, so we'll render back
               -- a list of all the parameters that failed validation.
               modifyResponse (setResponseCode 400)
-              writeLBS (encode $ errorMap view)
-
-
---------------------------------------------------------------------------------
-errorMap :: View Text -> Value
-errorMap = fromMaybe (error "Constructing error tree failed!") .
-    foldl encodeError (Just $ object []) . viewErrors
-  where
-    encodeError json (path, message) = json & pathToLens path .~ Just (toJSON message)
-    pathToLens = foldl (.) id . map pathElem
-    pathElem p = maybe (key p) nth (readMay $ T.unpack p)
+              writeLBS (encode $ jsonErrors view)
 
 
 --------------------------------------------------------------------------------
