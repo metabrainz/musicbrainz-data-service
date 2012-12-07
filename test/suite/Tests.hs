@@ -26,6 +26,7 @@ import           Test.Framework.Providers.HUnit (testCase)
 import           MusicBrainz
 import           MusicBrainz.Edit
 import qualified MusicBrainz.Data as Data
+import           MusicBrainz.Data.ArtistCredit
 import qualified MusicBrainz.Data.Edit as Data
 import qualified MusicBrainz.Data.Editor as Editor
 import           MusicBrainz.Service (serviceInitContext)
@@ -55,6 +56,8 @@ main = cleanState >> defaultMain tests
                 [ testLabelCreate
                 , testLabelFindLatest
                 ]
+            , testGroup "/recording"
+                [ testRecordingFindLatest ]
             , testGroup "/url"
                 [ testUrlFindLatest ]
             , testGroup "/work"
@@ -96,29 +99,12 @@ testArtistFindLatest :: Test
 testArtistFindLatest = testMb "/find-latest" $ do
   artist <- do
     ocharles <- Editor.register (Editor "ocharles")
-    autoEdit $ Data.create (entityRef ocharles) artistTree >>= viewRevision
+    autoEdit $ Data.create (entityRef ocharles) massiveAttack >>= viewRevision
   assertApiCall (buildRequest artist)
   where
     buildRequest artist = do
       postJson "/artist/find-latest"
         [aesonQQ|{ "mbid": <| dereference (coreRef artist) ^. remit mbid |> }|]
-
-    artistTree = ArtistTree { artistData = Artist { artistName = "Massive Attack"
-                                                  , artistSortName = "Massive Attack"
-                                                  , artistComment = ""
-                                                  , artistBeginDate = emptyDate
-                                                  , artistEndDate = emptyDate
-                                                  , artistEnded = False
-                                                  , artistGender = Nothing
-                                                  , artistType = Nothing
-                                                  , artistCountry = Nothing
-                                                  }
-                            , artistRelationships = Set.empty
-                            , artistAliases = Set.empty
-                            , artistIpiCodes = Set.empty
-                            , artistAnnotation = ""
-                            }
-
 
 --------------------------------------------------------------------------------
 testAddArtistType :: Test
@@ -192,6 +178,36 @@ testLabelFindLatest = testMb "/find-latest" $ do
 
 
 --------------------------------------------------------------------------------
+testRecordingFindLatest :: Test
+testRecordingFindLatest = testMb "/find-latest" $ do
+  recording <- do
+    ocharles <- Editor.register (Editor "ocharles")
+    autoEdit $ do
+      artist <- Data.create (entityRef ocharles) massiveAttack >>= viewRevision
+      ac <- getRef [ArtistCreditName { acnArtist = coreRef artist
+                                     , acnName = "Massive Attack"
+                                     , acnJoinPhrase = mempty
+                                     } ]
+      Data.create (entityRef ocharles) (recordingTree ac) >>= viewRevision
+  assertApiCall (buildRequest recording)
+  where
+    buildRequest recording = do
+      postJson "/recording/find-latest"
+        [aesonQQ|{ "mbid": <| dereference (coreRef recording) ^. remit mbid |> }|]
+
+    recordingTree ac =
+      RecordingTree { recordingData = Recording { recordingName = "Warp Records"
+                                                , recordingComment = ""
+                                                , recordingArtistCredit = ac
+                                                , recordingDuration = Nothing
+                                                }
+                    , recordingAnnotation = mempty
+                    , recordingIsrcs = mempty
+                    , recordingPuids = mempty
+                    }
+
+
+--------------------------------------------------------------------------------
 testUrlFindLatest :: Test
 testUrlFindLatest = testMb "/find-latest" $ do
   url <- do
@@ -258,9 +274,6 @@ runTest = runMb databaseSettings . withTransactionRollBack
 
 
 --------------------------------------------------------------------------------
-fromStrict :: BS.ByteString -> LBS.ByteString
-fromStrict x = LBS.fromChunks [x]
-
 toStrict :: LBS.ByteString -> BS.ByteString
 toStrict = BS.concat . LBS.toChunks
 
@@ -270,3 +283,22 @@ autoEdit :: EditM a -> MusicBrainz a
 autoEdit action = do
   editId <- Data.openEdit
   Data.withEdit editId action <* Data.apply editId
+
+
+--------------------------------------------------------------------------------
+massiveAttack :: Tree Artist
+massiveAttack = ArtistTree { artistData = Artist { artistName = "Massive Attack"
+                                                 , artistSortName = "Massive Attack"
+                                                 , artistComment = ""
+                                                 , artistBeginDate = emptyDate
+                                                 , artistEndDate = emptyDate
+                                                 , artistEnded = False
+                                                 , artistGender = Nothing
+                                                 , artistType = Nothing
+                                                 , artistCountry = Nothing
+                                                 }
+                           , artistRelationships = Set.empty
+                           , artistAliases = Set.empty
+                           , artistIpiCodes = Set.empty
+                           , artistAnnotation = ""
+                           }

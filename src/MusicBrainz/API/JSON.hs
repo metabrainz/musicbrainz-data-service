@@ -75,6 +75,15 @@ instance ToJSON Label where
 
 
 --------------------------------------------------------------------------------
+instance ToJSON Recording where
+  toJSON Recording{..} = object [ "name" .= recordingName
+                                , "comment" .= recordingComment
+                                , "artist_credit" .= recordingArtistCredit
+                                , "duration" .= recordingDuration
+                                ]
+
+
+--------------------------------------------------------------------------------
 instance ToJSON ReleaseGroup where
   toJSON ReleaseGroup{..} = object
     [ "name" .= releaseGroupName
@@ -97,6 +106,7 @@ instance ToJSON Url where
 --------------------------------------------------------------------------------
 instance ToJSON Work where
   toJSON Work{..} = object [ "name" .= workName
+                           , "comment" .= workComment
                            , "language" .= workLanguage
                            , "type" .= workType
                            ]
