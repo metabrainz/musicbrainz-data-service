@@ -25,9 +25,11 @@ module MusicBrainz.API
 
 import Control.Applicative
 import Control.Lens
+import Data.Monoid (mempty)
 import Data.Text (Text)
 import Text.Digestive
 
+import Data.Set ()
 import qualified Data.Text as T
 
 import MusicBrainz hiding (mbid, labelCode)
@@ -120,6 +122,7 @@ releaseGroup = ReleaseGroup <$> name
                             <*> comment
                             <*> "artist_credit" .: artistCreditRef
                             <*> "primary_type" .: releaseGroupTypeRef
+                            <*> pure mempty  -- Require's #52 to be fixed
 
 
 --------------------------------------------------------------------------------

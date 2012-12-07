@@ -6,14 +6,14 @@
 module MusicBrainz.API.JSON
     ( ) where
 
-import Control.Lens (view, by)
+import Control.Lens (view, remit)
 import Data.Aeson
 
 import MusicBrainz
 
 --------------------------------------------------------------------------------
 instance ToJSON (MBID a) where
-  toJSON = toJSON . view (by mbid)
+  toJSON = toJSON . view (remit mbid)
 
 
 --------------------------------------------------------------------------------

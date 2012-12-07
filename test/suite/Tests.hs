@@ -94,7 +94,7 @@ testArtistFindLatest = testMb "/find-latest" $ do
   where
     buildRequest artist = do
       postJson "/artist/find-latest"
-        [aesonQQ|{ "mbid": <| dereference (coreRef artist) ^. by mbid |> }|]
+        [aesonQQ|{ "mbid": <| dereference (coreRef artist) ^. remit mbid |> }|]
 
     artistTree = ArtistTree { artistData = Artist { artistName = "Massive Attack"
                                                   , artistSortName = "Massive Attack"
@@ -167,7 +167,7 @@ testLabelFindLatest = testMb "/find-latest" $ do
   where
     buildRequest label = do
       postJson "/label/find-latest"
-        [aesonQQ|{ "mbid": <| dereference (coreRef label) ^. by mbid |> }|]
+        [aesonQQ|{ "mbid": <| dereference (coreRef label) ^. remit mbid |> }|]
 
     labelTree = LabelTree { labelData = Label { labelName = "Warp Records"
                                                   , labelSortName = "Warp Records"
