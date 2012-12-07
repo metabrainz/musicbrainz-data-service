@@ -1,7 +1,7 @@
 {-# LANGUAGE GeneralizedNewtypeDeriving #-}
 {-# LANGUAGE OverloadedStrings #-}
 {-# LANGUAGE QuasiQuotes #-}
-module Main where
+module Main (main) where
 
 import           Control.Applicative
 import           Control.Lens
@@ -13,6 +13,7 @@ import           Data.Aeson.QQ (aesonQQ)
 import qualified Data.ByteString as BS
 import qualified Data.ByteString.Lazy as LBS
 import           Data.Maybe (fromJust)
+import           Data.Monoid (mempty)
 import qualified Data.Set as Set
 import           Data.Text
 import           Network.URI (parseURI)
@@ -56,6 +57,8 @@ main = cleanState >> defaultMain tests
                 ]
             , testGroup "/url"
                 [ testUrlFindLatest ]
+            , testGroup "/work"
+                [ testWorkFindLatest ]
             ]
     cleanState = runTest $ forM_
       [ "SET client_min_messages TO warning"
@@ -201,6 +204,29 @@ testUrlFindLatest = testMb "/find-latest" $ do
         [aesonQQ|{ "mbid": <| dereference (coreRef url) ^. remit mbid |> }|]
 
     urlTree = UrlTree { urlData = Url { urlUrl = fromJust (parseURI "http://musicbrainz.org/") } }
+
+
+--------------------------------------------------------------------------------
+testWorkFindLatest :: Test
+testWorkFindLatest = testMb "/find-latest" $ do
+  work <- do
+    ocharles <- Editor.register (Editor "ocharles")
+    autoEdit $ Data.create (entityRef ocharles) workTree >>= viewRevision
+  assertApiCall (buildRequest work)
+  where
+    buildRequest work = do
+      postJson "/work/find-latest"
+        [aesonQQ|{ "mbid": <| dereference (coreRef work) ^. remit mbid |> }|]
+
+    workTree = WorkTree { workData = Work { workName = "To a Wild Rose"
+                                          , workComment = ""
+                                          , workLanguage = Nothing
+                                          , workType = Nothing
+                                          }
+                        , workAliases = mempty
+                        , workAnnotation = mempty
+                        , workIswcs = mempty
+                        }
 
 
 --------------------------------------------------------------------------------

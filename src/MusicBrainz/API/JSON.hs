@@ -85,13 +85,21 @@ instance ToJSON ReleaseGroup where
 
 
 --------------------------------------------------------------------------------
+instance ToJSON URI where
+  toJSON = toJSON . show
+
+
+--------------------------------------------------------------------------------
 instance ToJSON Url where
   toJSON Url{..} = object [ "url" .= urlUrl ]
 
 
 --------------------------------------------------------------------------------
-instance ToJSON URI where
-  toJSON = toJSON . show
+instance ToJSON Work where
+  toJSON Work{..} = object [ "name" .= workName
+                           , "language" .= workLanguage
+                           , "type" .= workType
+                           ]
 
 
 --------------------------------------------------------------------------------
