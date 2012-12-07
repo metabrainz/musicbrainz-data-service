@@ -101,7 +101,7 @@ serviceInitContext ctxInit = makeSnaplet "service" "musicbrainz-data HTTP servic
 
     , ("/release-group/create", expose ReleaseGroup.create)
 
-    , ("/url/find-latest", expose Url.create)
+    , ("/url/find-latest", expose Url.findLatest)
     ]
 
   Service <$> ctxInit

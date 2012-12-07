@@ -196,9 +196,9 @@ testUrlFindLatest = testMb "/find-latest" $ do
     autoEdit $ Data.create (entityRef ocharles) urlTree >>= viewRevision
   assertApiCall (buildRequest url)
   where
-    buildRequest label = do
-      postJson "/label/find-latest"
-        [aesonQQ|{ "mbid": <| dereference (coreRef label) ^. remit mbid |> }|]
+    buildRequest url = do
+      postJson "/url/find-latest"
+        [aesonQQ|{ "mbid": <| dereference (coreRef url) ^. remit mbid |> }|]
 
     urlTree = UrlTree { urlData = Url { urlUrl = fromJust (parseURI "http://musicbrainz.org/") } }
 

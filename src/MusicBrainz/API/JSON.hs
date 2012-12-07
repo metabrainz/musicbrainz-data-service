@@ -8,6 +8,7 @@ module MusicBrainz.API.JSON
 
 import Control.Lens (view, remit)
 import Data.Aeson
+import Network.URI (URI)
 
 import MusicBrainz
 
@@ -81,6 +82,16 @@ instance ToJSON ReleaseGroup where
     , "primary_type" .= releaseGroupPrimaryType
     , "artist_credit" .= releaseGroupArtistCredit
     ]
+
+
+--------------------------------------------------------------------------------
+instance ToJSON Url where
+  toJSON Url{..} = object [ "url" .= urlUrl ]
+
+
+--------------------------------------------------------------------------------
+instance ToJSON URI where
+  toJSON = toJSON . show
 
 
 --------------------------------------------------------------------------------
