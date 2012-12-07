@@ -12,8 +12,10 @@ import           Data.Aeson (encode)
 import           Data.Aeson.QQ (aesonQQ)
 import qualified Data.ByteString as BS
 import qualified Data.ByteString.Lazy as LBS
+import           Data.Maybe (fromJust)
 import qualified Data.Set as Set
 import           Data.Text
+import           Network.URI (parseURI)
 import           Snap.Core
 import           Snap.Snaplet (runSnaplet)
 import           Snap.Test hiding (buildRequest)
@@ -52,6 +54,8 @@ main = cleanState >> defaultMain tests
                 [ testLabelCreate
                 , testLabelFindLatest
                 ]
+            , testGroup "/url"
+                [ testUrlFindLatest ]
             ]
     cleanState = runTest $ forM_
       [ "SET client_min_messages TO warning"
@@ -182,6 +186,21 @@ testLabelFindLatest = testMb "/find-latest" $ do
                             , labelIpiCodes = Set.empty
                             , labelAnnotation = ""
                             }
+
+
+--------------------------------------------------------------------------------
+testUrlFindLatest :: Test
+testUrlFindLatest = testMb "/find-latest" $ do
+  url <- do
+    ocharles <- Editor.register (Editor "ocharles")
+    autoEdit $ Data.create (entityRef ocharles) urlTree >>= viewRevision
+  assertApiCall (buildRequest url)
+  where
+    buildRequest label = do
+      postJson "/label/find-latest"
+        [aesonQQ|{ "mbid": <| dereference (coreRef label) ^. remit mbid |> }|]
+
+    urlTree = UrlTree { urlData = Url { urlUrl = fromJust (parseURI "http://musicbrainz.org/") } }
 
 
 --------------------------------------------------------------------------------

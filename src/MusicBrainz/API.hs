@@ -15,6 +15,7 @@ module MusicBrainz.API
     , artist
     , label
     , releaseGroup
+    , url
 
       -- * Running API Calls
     , runApi
@@ -27,6 +28,7 @@ import Control.Applicative
 import Control.Lens
 import Data.Monoid (mempty)
 import Data.Text (Text)
+import Network.URI (parseURI)
 import Text.Digestive
 
 import Data.Set ()
@@ -123,6 +125,14 @@ releaseGroup = ReleaseGroup <$> name
                             <*> "artist_credit" .: artistCreditRef
                             <*> "primary_type" .: releaseGroupTypeRef
                             <*> pure mempty  -- Require's #52 to be fixed
+
+
+--------------------------------------------------------------------------------
+url :: Form Text MusicBrainz Url
+url = Url <$> uri
+  where
+    uri = validate (maybe (Error "Invalid URI") Success . parseURI) $
+      string Nothing
 
 
 --------------------------------------------------------------------------------

@@ -22,6 +22,7 @@ import qualified MusicBrainz.API.Editor as Editor
 import qualified MusicBrainz.API.Gender as Gender
 import qualified MusicBrainz.API.Label as Label
 import qualified MusicBrainz.API.ReleaseGroup as ReleaseGroup
+import qualified MusicBrainz.API.Url as Url
 
 import           MusicBrainz (defaultConnectInfo, connectUser, connectDatabase, connectPassword, MusicBrainz, Context, openContext, runMbContext, withTransaction)
 import           MusicBrainz.API.JSON ()
@@ -99,6 +100,8 @@ serviceInitContext ctxInit = makeSnaplet "service" "musicbrainz-data HTTP servic
     , ("/label/find-latest", expose Label.findLatest)
 
     , ("/release-group/create", expose ReleaseGroup.create)
+
+    , ("/url/find-latest", expose Url.create)
     ]
 
   Service <$> ctxInit
