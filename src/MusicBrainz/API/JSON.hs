@@ -84,6 +84,21 @@ instance ToJSON Recording where
 
 
 --------------------------------------------------------------------------------
+instance ToJSON Release where
+  toJSON Release{..} = object [ "name" .= releaseName
+                              , "comment" .= releaseComment
+                              , "artist_credit" .= releaseArtistCredit
+                              , "duration" .= releaseReleaseGroup
+                              , "date" .= releaseDate
+                              , "country" .= releaseCountry
+                              , "script" .= releaseScript
+                              , "language" .= releaseLanguage
+                              , "packaging" .= releasePackaging
+                              , "status" .= releaseStatus
+                              ]
+
+
+--------------------------------------------------------------------------------
 instance ToJSON ReleaseGroup where
   toJSON ReleaseGroup{..} = object
     [ "name" .= releaseGroupName

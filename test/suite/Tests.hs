@@ -58,6 +58,8 @@ main = cleanState >> defaultMain tests
                 ]
             , testGroup "/recording"
                 [ testRecordingFindLatest ]
+            , testGroup "/release"
+                [ testReleaseFindLatest ]
             , testGroup "/url"
                 [ testUrlFindLatest ]
             , testGroup "/work"
@@ -205,6 +207,52 @@ testRecordingFindLatest = testMb "/find-latest" $ do
                     , recordingIsrcs = mempty
                     , recordingPuids = mempty
                     }
+
+
+--------------------------------------------------------------------------------
+testReleaseFindLatest :: Test
+testReleaseFindLatest = testMb "/find-latest" $ do
+  release <- do
+    ocharles <- Editor.register (Editor "ocharles")
+    autoEdit $ do
+      artist <- Data.create (entityRef ocharles) massiveAttack >>= viewRevision
+      ac <- getRef [ArtistCreditName { acnArtist = coreRef artist
+                                     , acnName = "Massive Attack"
+                                     , acnJoinPhrase = mempty
+                                     } ]
+      rg <- Data.create (entityRef ocharles) (dummyRg ac) >>= viewRevision
+      Data.create (entityRef ocharles) (releaseTree ac rg) >>= viewRevision
+  assertApiCall (buildRequest release)
+  where
+    buildRequest release = do
+      postJson "/release/find-latest"
+        [aesonQQ|{ "mbid": <| dereference (coreRef release) ^. remit mbid |> }|]
+
+    dummyRg ac = ReleaseGroupTree { releaseGroupData = ReleaseGroup { releaseGroupName = "Dummy"
+                                                                    , releaseGroupArtistCredit = ac
+                                                                    , releaseGroupComment = ""
+                                                                    , releaseGroupPrimaryType = Nothing
+                                                                    , releaseGroupSecondaryTypes = mempty
+                                                                    }
+                                  , releaseGroupAnnotation = mempty
+                                  }
+
+    releaseTree ac rg =
+      ReleaseTree { releaseData = Release { releaseName = "Warp Records"
+                                          , releaseComment = mempty
+                                          , releaseArtistCredit = ac
+                                          , releaseLanguage = Nothing
+                                          , releaseDate = emptyDate
+                                          , releaseCountry = Nothing
+                                          , releaseScript = Nothing
+                                          , releaseStatus = Nothing
+                                          , releasePackaging = Nothing
+                                          , releaseReleaseGroup = coreRef rg
+                                          }
+                  , releaseAnnotation = mempty
+                  , releaseLabels = mempty
+                  , releaseMediums = mempty
+                  }
 
 
 --------------------------------------------------------------------------------
