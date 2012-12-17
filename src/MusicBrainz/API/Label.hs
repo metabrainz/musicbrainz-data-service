@@ -13,6 +13,7 @@ import qualified Data.Set as Set
 import           MusicBrainz
 import           MusicBrainz.API
 import qualified MusicBrainz.API.FindLatest as FindLatest
+import           MusicBrainz.API.JSON
 import qualified MusicBrainz.Data as MB
 import           MusicBrainz.Data.Edit
 import           MusicBrainz.Data.Label ()
@@ -23,9 +24,9 @@ findLatest = FindLatest.findLatest
 
 
 --------------------------------------------------------------------------------
-create :: Form Text MusicBrainz (Ref (Revision Label))
+create :: Form Text MusicBrainz (RefObject (Revision Label))
 create =
-  runApi $
+  fmap RefObject $ runApi $
     withEdit
       <$> "edit" .: edit
       <*> (MB.create
