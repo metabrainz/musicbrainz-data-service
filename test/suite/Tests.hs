@@ -4,7 +4,7 @@
 module Main (main) where
 
 import           Control.Applicative
-import           Control.Lens
+import           Control.Lens hiding (Context)
 import           Control.Monad (forM_, void)
 import           Control.Monad.Reader (ask)
 import           Control.Monad.Trans
@@ -12,6 +12,7 @@ import           Data.Aeson (encode)
 import           Data.Aeson.QQ (aesonQQ)
 import qualified Data.ByteString as BS
 import qualified Data.ByteString.Lazy as LBS
+import           Data.Configurator (load, lookupDefault, Worth(..))
 import           Data.Maybe (fromJust)
 import           Data.Monoid (mempty)
 import qualified Data.Set as Set
@@ -20,7 +21,7 @@ import           Network.URI (parseURI)
 import           Snap.Core
 import           Snap.Snaplet (runSnaplet)
 import           Snap.Test hiding (buildRequest)
-import           Test.Framework (defaultMain, testGroup, Test)
+import           Test.Framework (buildTest, defaultMain, testGroup, Test)
 import           Test.Framework.Providers.HUnit (testCase)
 
 import           MusicBrainz
@@ -37,47 +38,63 @@ import           Data.Aeson.Types (Value(..))
 
 --------------------------------------------------------------------------------
 main :: IO ()
-main = cleanState >> defaultMain tests
+main = defaultMain [buildTest $ fmap (testGroup "All tests") tests]
   where
-    tests = [ testGroup "/artist"
-                [ testArtistCreate
-                , testArtistFindLatest
-                ]
-            , testGroup "/artist-type"
-                [ testAddArtistType
-                ]
-            , testGroup "/editor"
-                [ testEditorRegister
-                ]
-            , testGroup "/gender"
-                [ testGenderAdd
-                ]
-            , testGroup "/label"
-                [ testLabelCreate
-                , testLabelFindLatest
-                ]
-            , testGroup "/recording"
-                [ testRecordingFindLatest ]
-            , testGroup "/release"
-                [ testReleaseFindLatest ]
-            , testGroup "/url"
-                [ testUrlFindLatest ]
-            , testGroup "/work"
-                [ testWorkFindLatest ]
-            ]
-    cleanState = runTest $ forM_
-      [ "SET client_min_messages TO warning"
-      , "TRUNCATE artist_type CASCADE"
-      , "TRUNCATE country CASCADE"
-      , "TRUNCATE editor CASCADE"
-      , "TRUNCATE gender CASCADE"
-      , "ALTER SEQUENCE revision_revision_id_seq RESTART 1"
-      , "COMMIT"
-      ] $ \q -> execute q ()
+    tests = do
+      config <- load [Optional "autotest.cfg"]
+
+      dbSettings <- ConnectInfo
+        <$> lookupDefault (connectHost defaultConnectInfo) config "host"
+        <*> lookupDefault (connectPort defaultConnectInfo) config "port"
+        <*> lookupDefault "musicbrainz" config "username"
+        <*> lookupDefault (connectPassword defaultConnectInfo) config "password"
+        <*> lookupDefault "musicbrainz_nes" config "database"
+
+      ctx <- openContext dbSettings
+
+      runMbContext ctx $
+        forM_
+          [ "SET client_min_messages TO warning"
+          , "TRUNCATE artist_type CASCADE"
+          , "TRUNCATE country CASCADE"
+          , "TRUNCATE editor CASCADE"
+          , "TRUNCATE gender CASCADE"
+          , "ALTER SEQUENCE revision_revision_id_seq RESTART 1"
+          , "COMMIT"
+          ] $ \q -> execute q ()
+      return [ testGroup "/artist"
+                 [ testArtistCreate ctx
+                 , testArtistFindLatest ctx
+                 ]
+             , testGroup "/artist-type"
+                 [ testAddArtistType ctx
+                 ]
+             , testGroup "/editor"
+                 [ testEditorRegister ctx
+                 ]
+             , testGroup "/gender"
+                 [ testGenderAdd ctx
+                 ]
+             , testGroup "/label"
+                 [ testLabelCreate ctx
+                 , testLabelFindLatest ctx
+                 ]
+             , testGroup "/recording"
+                 [ testRecordingFindLatest ctx ]
+             , testGroup "/release"
+                 [ testReleaseFindLatest ctx ]
+             , testGroup "/url"
+                 [ testUrlFindLatest ctx ]
+             , testGroup "/work"
+                 [ testWorkFindLatest ctx ]
+             ]
 
 
 --------------------------------------------------------------------------------
-testArtistCreate :: Test
+type MusicBrainzTest = Context -> Test
+
+--------------------------------------------------------------------------------
+testArtistCreate :: MusicBrainzTest
 testArtistCreate = testMb "/create" $
   assertApiCall buildRequest
   where
@@ -97,7 +114,7 @@ testArtistCreate = testMb "/create" $
 
 
 --------------------------------------------------------------------------------
-testArtistFindLatest :: Test
+testArtistFindLatest :: MusicBrainzTest
 testArtistFindLatest = testMb "/find-latest" $ do
   artist <- do
     ocharles <- Editor.register (Editor "ocharles")
@@ -109,7 +126,7 @@ testArtistFindLatest = testMb "/find-latest" $ do
         [aesonQQ|{ "mbid": <| dereference (coreRef artist) ^. remit mbid |> }|]
 
 --------------------------------------------------------------------------------
-testAddArtistType :: Test
+testAddArtistType :: MusicBrainzTest
 testAddArtistType = testMb "/add" $
   assertApiCall buildRequest
   where
@@ -117,7 +134,7 @@ testAddArtistType = testMb "/add" $
 
 
 --------------------------------------------------------------------------------
-testEditorRegister :: Test
+testEditorRegister :: MusicBrainzTest
 testEditorRegister = testMb "/register" $
   assertApiCall builder
   where
@@ -125,7 +142,7 @@ testEditorRegister = testMb "/register" $
 
 
 --------------------------------------------------------------------------------
-testGenderAdd :: Test
+testGenderAdd :: MusicBrainzTest
 testGenderAdd = testMb "/add" $
   assertApiCall buildRequest
   where
@@ -133,7 +150,7 @@ testGenderAdd = testMb "/add" $
 
 
 --------------------------------------------------------------------------------
-testLabelCreate :: Test
+testLabelCreate :: MusicBrainzTest
 testLabelCreate = testMb "/create" $
   assertApiCall buildRequest
   where
@@ -153,7 +170,7 @@ testLabelCreate = testMb "/create" $
 
 
 --------------------------------------------------------------------------------
-testLabelFindLatest :: Test
+testLabelFindLatest :: MusicBrainzTest
 testLabelFindLatest = testMb "/find-latest" $ do
   label <- do
     ocharles <- Editor.register (Editor "ocharles")
@@ -181,7 +198,7 @@ testLabelFindLatest = testMb "/find-latest" $ do
 
 
 --------------------------------------------------------------------------------
-testRecordingFindLatest :: Test
+testRecordingFindLatest :: MusicBrainzTest
 testRecordingFindLatest = testMb "/find-latest" $ do
   recording <- do
     ocharles <- Editor.register (Editor "ocharles")
@@ -211,7 +228,7 @@ testRecordingFindLatest = testMb "/find-latest" $ do
 
 
 --------------------------------------------------------------------------------
-testReleaseFindLatest :: Test
+testReleaseFindLatest :: MusicBrainzTest
 testReleaseFindLatest = testMb "/find-latest" $ do
   release <- do
     ocharles <- Editor.register (Editor "ocharles")
@@ -257,7 +274,7 @@ testReleaseFindLatest = testMb "/find-latest" $ do
 
 
 --------------------------------------------------------------------------------
-testUrlFindLatest :: Test
+testUrlFindLatest :: MusicBrainzTest
 testUrlFindLatest = testMb "/find-latest" $ do
   url <- do
     ocharles <- Editor.register (Editor "ocharles")
@@ -272,7 +289,7 @@ testUrlFindLatest = testMb "/find-latest" $ do
 
 
 --------------------------------------------------------------------------------
-testWorkFindLatest :: Test
+testWorkFindLatest :: MusicBrainzTest
 testWorkFindLatest = testMb "/find-latest" $ do
   work <- do
     ocharles <- Editor.register (Editor "ocharles")
@@ -300,8 +317,8 @@ postJson endPoint = postRaw endPoint "application/json" . toStrict . encode
 
 
 --------------------------------------------------------------------------------
-testMb :: String -> MusicBrainz a -> Test
-testMb label action = testCase label . runTest . void $ action
+testMb :: String -> MusicBrainz a -> Context -> Test
+testMb label action ctx = testCase label . runTest ctx . void $ action
 
 
 --------------------------------------------------------------------------------
@@ -315,11 +332,8 @@ assertApiCall buildRequest = do
 
 
 --------------------------------------------------------------------------------
-runTest :: MusicBrainz a -> IO a
-runTest = runMb databaseSettings . withTransactionRollBack
-  where databaseSettings = defaultConnectInfo { connectDatabase = "musicbrainz_nes_service"
-                                              , connectUser = "musicbrainz"
-                                              }
+runTest :: Context -> MusicBrainz a -> IO a
+runTest ctx = runMbContext ctx . withTransactionRollBack
 
 
 --------------------------------------------------------------------------------
