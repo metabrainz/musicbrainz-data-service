@@ -12,21 +12,16 @@ import           Text.Digestive
 import           MusicBrainz
 import           MusicBrainz.API
 import           MusicBrainz.API.JSON
+import qualified MusicBrainz.API.Create as Create
 
 import qualified MusicBrainz.Data as MB
 import qualified MusicBrainz.Data.Edit as MB
 
 --------------------------------------------------------------------------------
 create :: Form Text MusicBrainz (RefObject (Revision ReleaseGroup))
-create =
-  fmap RefObject $ runApi $
-    MB.withEdit
-      <$> "edit" .: edit
-      <*> (MB.create
-             <$> editor
-             <*> (ReleaseGroupTree
-                    <$> "release_group" .: releaseGroup
-                    <*> pure ""))
+create = Create.create $
+  ReleaseGroupTree <$> "release_group" .: releaseGroup
+                   <*> pure ""
 
 
 --------------------------------------------------------------------------------

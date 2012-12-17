@@ -12,6 +12,7 @@ import           Text.Digestive
 
 import           MusicBrainz
 import           MusicBrainz.API
+import qualified MusicBrainz.API.Create as Create
 import qualified MusicBrainz.API.FindLatest as FindLatest
 import           MusicBrainz.API.JSON
 import qualified MusicBrainz.Data as MB
@@ -24,13 +25,7 @@ findLatest = FindLatest.findLatest
 
 --------------------------------------------------------------------------------
 create :: Form Text MusicBrainz (RefObject (Revision Url))
-create =
-  fmap RefObject $ runApi $
-    MB.withEdit
-      <$> "edit" .: edit
-      <*> (MB.create
-             <$> editor
-             <*> (UrlTree <$> "url" .: url))
+create = Create.create $ UrlTree <$> "url" .: url
 
 
 --------------------------------------------------------------------------------
