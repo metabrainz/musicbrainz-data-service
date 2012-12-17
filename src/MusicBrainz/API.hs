@@ -10,6 +10,7 @@ module MusicBrainz.API
       -- ** Entity reference parsers
     , edit
     , editorRef
+    , revision
 
       -- ** Entities
     , artist
@@ -114,6 +115,7 @@ label = Label <$> name
               <*> ended
               <*> "type" .: labelTypeRef
               <*> "code" .: labelCode
+              <*> "country" .: countryRef
   where labelCode = check "Label codes must be positive and at most 5 digits"
                       (maybe True (\i -> i > 0 && i < 100000)) $
                         optionalStringRead "Invalid integer" Nothing
@@ -204,3 +206,9 @@ editor = "editor" .: editorRef
 edit :: Form Text MusicBrainz (Ref Edit)
 edit = "edit" .: editRef
   where editRef = ref "Invalid edit reference"
+
+
+--------------------------------------------------------------------------------
+revision :: ResolveReference (Revision a) => Form Text MusicBrainz (Ref (Revision a))
+revision = "revision" .: revisionRef
+  where revisionRef = ref "Invalid revision reference"

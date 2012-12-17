@@ -93,6 +93,7 @@ serviceInitContext ctxInit = makeSnaplet "service" "musicbrainz-data HTTP servic
   addRoutes
     [ ("/artist/create", expose Artist.create)
     , ("/artist/find-latest", expose Artist.findLatest)
+    , ("/artist/view-revision", expose Artist.viewRevision)
 
     , ("/artist-type/add", expose ArtistType.add)
 
@@ -104,16 +105,22 @@ serviceInitContext ctxInit = makeSnaplet "service" "musicbrainz-data HTTP servic
 
     , ("/label/create", expose Label.create)
     , ("/label/find-latest", expose Label.findLatest)
+    , ("/label/view-revision", expose Label.viewRevision)
 
     , ("/recording/find-latest", expose Recording.findLatest)
+    , ("/recording/view-revision", expose Recording.viewRevision)
 
     , ("/release/find-latest", expose Release.findLatest)
+    , ("/release/view-revision", expose Release.viewRevision)
 
     , ("/release-group/create", expose ReleaseGroup.create)
+    , ("/release-group/view-revision", expose ReleaseGroup.viewRevision)
 
     , ("/url/find-latest", expose Url.findLatest)
+    , ("/url/view-revision", expose Url.viewRevision)
 
     , ("/work/find-latest", expose Work.findLatest)
+    , ("/work/view-revision", expose Work.viewRevision)
     ]
 
   Service <$> ctxInit

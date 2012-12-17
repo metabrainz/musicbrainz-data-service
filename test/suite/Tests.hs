@@ -165,14 +165,15 @@ testLabelFindLatest = testMb "/find-latest" $ do
         [aesonQQ|{ "mbid": <| dereference (coreRef label) ^. remit mbid |> }|]
 
     labelTree = LabelTree { labelData = Label { labelName = "Warp Records"
-                                                  , labelSortName = "Warp Records"
-                                                  , labelComment = ""
-                                                  , labelBeginDate = emptyDate
-                                                  , labelEndDate = emptyDate
-                                                  , labelEnded = False
-                                                  , labelCode = Nothing
-                                                  , labelType = Nothing
-                                                  }
+                                              , labelSortName = "Warp Records"
+                                              , labelComment = ""
+                                              , labelBeginDate = emptyDate
+                                              , labelEndDate = emptyDate
+                                              , labelEnded = False
+                                              , labelCode = Nothing
+                                              , labelType = Nothing
+                                              , labelCountry = Nothing
+                                              }
                             , labelAliases = Set.empty
                             , labelIpiCodes = Set.empty
                             , labelAnnotation = ""
