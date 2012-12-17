@@ -4,7 +4,7 @@
 {-# LANGUAGE RecordWildCards #-}
 {-# LANGUAGE OverloadedStrings #-}
 module MusicBrainz.API.JSON
-    ( ) where
+    ( RefObject(..) ) where
 
 import Control.Lens (view, remit)
 import Data.Aeson
@@ -138,3 +138,10 @@ instance ToJSON PartialDate where
 --------------------------------------------------------------------------------
 instance (Referenceable a, ToJSON (RefSpec a)) => ToJSON (Ref a) where
   toJSON = toJSON . dereference
+
+
+--------------------------------------------------------------------------------
+newtype RefObject a = RefObject (Ref a)
+
+instance (Referenceable a, ToJSON (RefSpec a)) => ToJSON (RefObject a) where
+  toJSON (RefObject r) = object [ "ref" .= r ]

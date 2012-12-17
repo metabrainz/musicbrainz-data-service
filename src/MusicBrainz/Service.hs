@@ -18,6 +18,7 @@ import           Text.Digestive.Aeson (digestJSON, jsonErrors)
 import qualified Data.Map as Map
 import qualified MusicBrainz.API.Artist as Artist
 import qualified MusicBrainz.API.ArtistType as ArtistType
+import qualified MusicBrainz.API.Edit as Edit
 import qualified MusicBrainz.API.Editor as Editor
 import qualified MusicBrainz.API.Gender as Gender
 import qualified MusicBrainz.API.Label as Label
@@ -94,6 +95,8 @@ serviceInitContext ctxInit = makeSnaplet "service" "musicbrainz-data HTTP servic
     , ("/artist/find-latest", expose Artist.findLatest)
 
     , ("/artist-type/add", expose ArtistType.add)
+
+    , ("/edit/open", expose Edit.open)
 
     , ("/editor/register", expose Editor.register)
 
