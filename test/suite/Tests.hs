@@ -316,7 +316,7 @@ assertApiCall buildRequest = do
 --------------------------------------------------------------------------------
 runTest :: MusicBrainz a -> IO a
 runTest = runMb databaseSettings . withTransactionRollBack
-  where databaseSettings = defaultConnectInfo { connectDatabase = "musicbrainz_nes"
+  where databaseSettings = defaultConnectInfo { connectDatabase = "musicbrainz_nes_service"
                                               , connectUser = "musicbrainz"
                                               }
 
