@@ -13,4 +13,4 @@ import           MusicBrainz.API
 import qualified MusicBrainz.Data.Editor as Editor
 
 register :: Form Text MusicBrainz (Entity Editor)
-register = runApi $ Editor.register <$> (Editor <$> name)
+register = runApi $ Editor.register <$> (Editor <$> name <*> "password" .: nonEmptyText)

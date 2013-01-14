@@ -7,6 +7,7 @@ module MusicBrainz.API.Url
     ) where
 
 import           Control.Applicative
+import           Data.Monoid (mempty)
 import           Data.Text (Text)
 import           Text.Digestive
 
@@ -25,7 +26,8 @@ findLatest = FindLatest.findLatest
 
 --------------------------------------------------------------------------------
 create :: Form Text MusicBrainz (RefObject (Revision Url))
-create = Create.create $ UrlTree <$> "url" .: url
+create = Create.create $ (UrlTree <$> "url" .: url
+                                  <*> pure mempty)
 
 
 --------------------------------------------------------------------------------

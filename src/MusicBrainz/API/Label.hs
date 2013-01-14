@@ -31,6 +31,7 @@ create = Create.create $
   LabelTree <$> "label" .: label
             <*> pure Set.empty
             <*> pure Set.empty
+            <*> pure Set.empty
             <*> pure ""
 
 
