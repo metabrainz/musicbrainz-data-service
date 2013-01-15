@@ -68,9 +68,6 @@ main = defaultMain [buildTest $ fmap (testGroup "All tests") tests]
              , testGroup "/artist-type"
                  [ testAddArtistType ctx
                  ]
-             , testGroup "/editor"
-                 [ testEditorRegister ctx
-                 ]
              , testGroup "/gender"
                  [ testGenderAdd ctx
                  ]
@@ -130,14 +127,6 @@ testAddArtistType = testMb "/add" $
   assertApiCall buildRequest
   where
     buildRequest = postJson "/artist-type/add" [aesonQQ|{ "name": "Person" }|]
-
-
---------------------------------------------------------------------------------
-testEditorRegister :: MusicBrainzTest
-testEditorRegister = testMb "/register" $
-  assertApiCall builder
-  where
-    builder = postJson "/editor/register" [aesonQQ|{ "name": "ocharles" }|]
 
 
 --------------------------------------------------------------------------------
