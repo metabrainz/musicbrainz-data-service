@@ -19,7 +19,6 @@ import qualified Data.Map as Map
 import qualified MusicBrainz.API.Artist as Artist
 import qualified MusicBrainz.API.ArtistType as ArtistType
 import qualified MusicBrainz.API.Edit as Edit
-import qualified MusicBrainz.API.Editor as Editor
 import qualified MusicBrainz.API.Gender as Gender
 import qualified MusicBrainz.API.Label as Label
 import qualified MusicBrainz.API.Recording as Recording
@@ -98,8 +97,6 @@ serviceInitContext ctxInit = makeSnaplet "service" "musicbrainz-data HTTP servic
     , ("/artist-type/add", expose ArtistType.add)
 
     , ("/edit/open", expose Edit.open)
-
-    , ("/editor/register", expose Editor.register)
 
     , ("/gender/add", expose Gender.add)
 
