@@ -17,6 +17,7 @@ module MusicBrainz.API
     , label
     , releaseGroup
     , url
+    , work
 
       -- * Running API Calls
     , runApi
@@ -67,6 +68,11 @@ artistTypeRef = optionalRef "Invalid artist type reference"
 
 
 --------------------------------------------------------------------------------
+workTypeRef :: Form Text MusicBrainz (Maybe (Ref WorkType))
+workTypeRef = optionalRef "Invalid work type reference"
+
+
+--------------------------------------------------------------------------------
 countryRef :: Form Text MusicBrainz (Maybe (Ref Country))
 countryRef = optionalRef "Invalid country reference"
 
@@ -84,6 +90,11 @@ genderRef = optionalRef "Invalid gender reference"
 --------------------------------------------------------------------------------
 labelTypeRef :: Form Text MusicBrainz (Maybe (Ref LabelType))
 labelTypeRef = optionalRef "Invalid label type reference"
+
+
+--------------------------------------------------------------------------------
+languageRef :: Form Text MusicBrainz (Maybe (Ref Language))
+languageRef = optionalRef "Invalid language  reference"
 
 
 --------------------------------------------------------------------------------
@@ -135,6 +146,14 @@ url = Url <$> uri
   where
     uri = validate (maybe (Error "Invalid URI") Success . parseURI) $
       string Nothing
+
+
+--------------------------------------------------------------------------------
+work :: Form Text MusicBrainz Work
+work = Work <$> name
+            <*> comment
+            <*> "type" .: workTypeRef
+            <*> "language" .: languageRef
 
 
 --------------------------------------------------------------------------------

@@ -15,7 +15,6 @@ import qualified Data.ByteString.Lazy as LBS
 import           Data.Configurator (load, lookupDefault, Worth(..))
 import           Data.Maybe (fromJust)
 import           Data.Monoid (mempty)
-import qualified Data.Set as Set
 import           Data.Text
 import           Network.URI (parseURI)
 import           Snap.Core
@@ -99,7 +98,7 @@ testArtistCreate = testMb "/create" $
   assertApiCall buildRequest
   where
     buildRequest = do
-      ocharles <- lift $ Editor.register (Editor "ocharles")
+      ocharles <- lift $ registerEditor
       editId <- lift $ Data.openEdit
       postJson "/artist/create" (testJson ocharles editId)
       where
@@ -117,7 +116,7 @@ testArtistCreate = testMb "/create" $
 testArtistFindLatest :: MusicBrainzTest
 testArtistFindLatest = testMb "/find-latest" $ do
   artist <- do
-    ocharles <- Editor.register (Editor "ocharles")
+    ocharles <- registerEditor
     autoEdit $ Data.create (entityRef ocharles) massiveAttack >>= viewRevision
   assertApiCall (buildRequest artist)
   where
@@ -155,7 +154,7 @@ testLabelCreate = testMb "/create" $
   assertApiCall buildRequest
   where
     buildRequest = do
-      ocharles <- lift $ Editor.register (Editor "ocharles")
+      ocharles <- lift $ registerEditor
       editId <- lift $ Data.openEdit
       postJson "/label/create" (testJson ocharles editId)
       where
@@ -173,7 +172,7 @@ testLabelCreate = testMb "/create" $
 testLabelFindLatest :: MusicBrainzTest
 testLabelFindLatest = testMb "/find-latest" $ do
   label <- do
-    ocharles <- Editor.register (Editor "ocharles")
+    ocharles <- registerEditor
     autoEdit $ Data.create (entityRef ocharles) labelTree >>= viewRevision
   assertApiCall (buildRequest label)
   where
@@ -191,9 +190,10 @@ testLabelFindLatest = testMb "/find-latest" $ do
                                               , labelType = Nothing
                                               , labelCountry = Nothing
                                               }
-                            , labelAliases = Set.empty
-                            , labelIpiCodes = Set.empty
+                            , labelAliases = mempty
+                            , labelIpiCodes = mempty
                             , labelAnnotation = ""
+                            , labelRelationships = mempty
                             }
 
 
@@ -201,7 +201,7 @@ testLabelFindLatest = testMb "/find-latest" $ do
 testRecordingFindLatest :: MusicBrainzTest
 testRecordingFindLatest = testMb "/find-latest" $ do
   recording <- do
-    ocharles <- Editor.register (Editor "ocharles")
+    ocharles <- registerEditor
     autoEdit $ do
       artist <- Data.create (entityRef ocharles) massiveAttack >>= viewRevision
       ac <- getRef [ArtistCreditName { acnArtist = coreRef artist
@@ -224,6 +224,7 @@ testRecordingFindLatest = testMb "/find-latest" $ do
                     , recordingAnnotation = mempty
                     , recordingIsrcs = mempty
                     , recordingPuids = mempty
+                    , recordingRelationships = mempty
                     }
 
 
@@ -231,7 +232,7 @@ testRecordingFindLatest = testMb "/find-latest" $ do
 testReleaseFindLatest :: MusicBrainzTest
 testReleaseFindLatest = testMb "/find-latest" $ do
   release <- do
-    ocharles <- Editor.register (Editor "ocharles")
+    ocharles <- registerEditor
     autoEdit $ do
       artist <- Data.create (entityRef ocharles) massiveAttack >>= viewRevision
       ac <- getRef [ArtistCreditName { acnArtist = coreRef artist
@@ -253,6 +254,7 @@ testReleaseFindLatest = testMb "/find-latest" $ do
                                                                     , releaseGroupSecondaryTypes = mempty
                                                                     }
                                   , releaseGroupAnnotation = mempty
+                                  , releaseGroupRelationships = mempty
                                   }
 
     releaseTree ac rg =
@@ -270,6 +272,7 @@ testReleaseFindLatest = testMb "/find-latest" $ do
                   , releaseAnnotation = mempty
                   , releaseLabels = mempty
                   , releaseMediums = mempty
+                  , releaseRelationships = mempty
                   }
 
 
@@ -277,7 +280,7 @@ testReleaseFindLatest = testMb "/find-latest" $ do
 testUrlFindLatest :: MusicBrainzTest
 testUrlFindLatest = testMb "/find-latest" $ do
   url <- do
-    ocharles <- Editor.register (Editor "ocharles")
+    ocharles <- registerEditor
     autoEdit $ Data.create (entityRef ocharles) urlTree >>= viewRevision
   assertApiCall (buildRequest url)
   where
@@ -285,14 +288,16 @@ testUrlFindLatest = testMb "/find-latest" $ do
       postJson "/url/find-latest"
         [aesonQQ|{ "mbid": <| dereference (coreRef url) ^. remit mbid |> }|]
 
-    urlTree = UrlTree { urlData = Url { urlUrl = fromJust (parseURI "http://musicbrainz.org/") } }
+    urlTree = UrlTree { urlData = Url { urlUrl = fromJust (parseURI "http://musicbrainz.org/") }
+                      , urlRelationships = mempty
+                      }
 
 
 --------------------------------------------------------------------------------
 testWorkFindLatest :: MusicBrainzTest
 testWorkFindLatest = testMb "/find-latest" $ do
   work <- do
-    ocharles <- Editor.register (Editor "ocharles")
+    ocharles <- registerEditor
     autoEdit $ Data.create (entityRef ocharles) workTree >>= viewRevision
   assertApiCall (buildRequest work)
   where
@@ -308,6 +313,7 @@ testWorkFindLatest = testMb "/find-latest" $ do
                         , workAliases = mempty
                         , workAnnotation = mempty
                         , workIswcs = mempty
+                        , workRelationships = mempty
                         }
 
 
@@ -360,8 +366,12 @@ massiveAttack = ArtistTree { artistData = Artist { artistName = "Massive Attack"
                                                  , artistType = Nothing
                                                  , artistCountry = Nothing
                                                  }
-                           , artistRelationships = Set.empty
-                           , artistAliases = Set.empty
-                           , artistIpiCodes = Set.empty
+                           , artistRelationships = mempty
+                           , artistAliases = mempty
+                           , artistIpiCodes = mempty
                            , artistAnnotation = ""
                            }
+
+--------------------------------------------------------------------------------
+registerEditor :: MusicBrainz (Entity Editor)
+registerEditor = Editor.register (Editor "ocharles" "password")
