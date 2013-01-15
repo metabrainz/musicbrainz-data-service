@@ -4,6 +4,7 @@ module MusicBrainz.API.Work
     ( findLatest
     , viewRevision
     , create
+    , update
     ) where
 
 import           Control.Applicative
@@ -16,6 +17,7 @@ import           MusicBrainz
 import           MusicBrainz.API
 import qualified MusicBrainz.API.Create as Create
 import qualified MusicBrainz.API.FindLatest as FindLatest
+import qualified MusicBrainz.API.Update as Update
 import qualified MusicBrainz.Data as MB
 import           MusicBrainz.API.JSON
 
@@ -32,7 +34,17 @@ viewRevision = runApi $
 
 --------------------------------------------------------------------------------
 create :: Form Text MusicBrainz (RefObject (Revision Work))
-create = Create.create $
+create = Create.create tree
+
+
+--------------------------------------------------------------------------------
+update :: Form Text MusicBrainz (RefObject (Revision Work))
+update = Update.update tree
+
+
+--------------------------------------------------------------------------------
+tree :: Form Text MusicBrainz (Tree Work)
+tree =
   WorkTree <$> "work" .: work
            <*> pure mempty
            <*> pure mempty
@@ -43,4 +55,5 @@ create = Create.create $
       validate (\input -> case input ^? iswc of
                   Nothing -> Error "Invalid ISWC"
                   Just i -> return i) nonEmptyText
+
 
