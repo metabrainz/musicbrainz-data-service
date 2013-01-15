@@ -33,6 +33,17 @@ instance (ToJSON a, ToJSON (Ref a)) => ToJSON (Entity a) where
 
 
 --------------------------------------------------------------------------------
+instance ToJSON Alias where
+  toJSON Alias{..} = object [ "name" .= aliasName
+                            , "sort-name" .= aliasSortName
+                            , "locale" .= aliasLocale
+                            , "type" .= aliasType
+                            , "begin-date" .= aliasBeginDate
+                            , "end-date" .= aliasEndDate
+                            , "ended" .= aliasEnded
+                            ]
+
+--------------------------------------------------------------------------------
 instance ToJSON Artist where
   toJSON Artist{..} = object [ "name" .= artistName
                              , "sort-name" .= artistSortName

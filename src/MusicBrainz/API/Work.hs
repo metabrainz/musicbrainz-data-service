@@ -5,6 +5,7 @@ module MusicBrainz.API.Work
     , viewRevision
     , create
     , update
+    , viewAliases
     ) where
 
 import           Control.Applicative
@@ -12,6 +13,8 @@ import           Control.Lens
 import           Data.Monoid (mempty)
 import           Data.Text (Text)
 import           Text.Digestive
+
+import qualified Data.Set as Set
 
 import           MusicBrainz
 import           MusicBrainz.API
@@ -28,8 +31,7 @@ findLatest = FindLatest.findLatest
 
 --------------------------------------------------------------------------------
 viewRevision :: Form Text MusicBrainz (CoreEntity Work)
-viewRevision = runApi $
-  MB.viewRevision <$> "revision" .: revision
+viewRevision = runApi $ MB.viewRevision <$> revision
 
 
 --------------------------------------------------------------------------------
@@ -57,3 +59,7 @@ tree =
                   Just i -> return i) nonEmptyText
 
 
+--------------------------------------------------------------------------------
+viewAliases :: Form Text MusicBrainz (Set.Set Alias)
+viewAliases = runApi $
+  MB.viewAliases <$> (revision :: Form Text MusicBrainz (Ref (Revision Work)))
