@@ -21,6 +21,7 @@ instance ToJSON (MBID a) where
 instance (ToJSON a, ToJSON (Ref a)) => ToJSON (CoreEntity a) where
   toJSON e = object [ "mbid" .= coreRef e
                     , "data" .= coreData e
+                    , "revision" .= coreRevision e
                     ]
 
 
