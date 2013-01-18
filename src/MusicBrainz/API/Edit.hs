@@ -1,7 +1,8 @@
 {-# LANGUAGE NoMonomorphismRestriction #-}
 {-# LANGUAGE OverloadedStrings #-}
 module MusicBrainz.API.Edit
-    ( open
+    ( addEditNote
+    , open
     ) where
 
 import Control.Applicative
@@ -11,7 +12,18 @@ import Text.Digestive
 import MusicBrainz
 import MusicBrainz.API
 import MusicBrainz.API.JSON (RefObject(..))
-import qualified MusicBrainz.Data.Edit as Edit
+import qualified MusicBrainz.Data.Edit as MB
 
+--------------------------------------------------------------------------------
 open :: Form Text MusicBrainz (RefObject Edit)
-open = runApi $ pure (RefObject <$> Edit.openEdit)
+open = runApi $ pure (RefObject <$> MB.openEdit)
+
+
+--------------------------------------------------------------------------------
+addEditNote :: Form Text MusicBrainz ()
+addEditNote = runApi $
+    MB.addEditNote <$> edit
+                   <*> editNote
+  where
+    editNote = EditNote <$> "text" .: nonEmptyText
+                        <*> editor

@@ -97,6 +97,7 @@ serviceInitContext ctxInit = makeSnaplet "service" "musicbrainz-data HTTP servic
 
     , ("/artist-type/add", expose ArtistType.add)
 
+    , ("/edit/add-note", expose Edit.addEditNote)
     , ("/edit/open", expose Edit.open)
 
     , ("/gender/add", expose Gender.add)
