@@ -4,10 +4,16 @@
 {-# LANGUAGE RecordWildCards #-}
 {-# LANGUAGE OverloadedStrings #-}
 module MusicBrainz.API.JSON
-    ( MaybeObject(..), RefObject(..) ) where
+    ( Annotation(..)
+    , MaybeObject(..)
+    , RefObject(..)
+    , TopLevel
+    ) where
 
 import Control.Lens (view, remit)
 import Data.Aeson
+import Data.Set (Set)
+import Data.Text (Text)
 import Network.URI (URI)
 
 import qualified Data.HashMap.Strict as HMap
@@ -184,3 +190,22 @@ instance (ToJSON v, ToJSON (RefSpec k), Referenceable k) => ToJSON (Map.Map (Ref
 --------------------------------------------------------------------------------
 instance ToJSON ISWC where
   toJSON = toJSON . view (remit iswc)
+
+
+--------------------------------------------------------------------------------
+newtype Annotation = Annotation Text
+
+instance ToJSON Annotation where
+  toJSON (Annotation t) = object [ "annotation" .= t ]
+
+--------------------------------------------------------------------------------
+class ToJSON a => TopLevel a
+
+instance (Referenceable a, ToJSON (RefSpec a)) => TopLevel (RefObject a)
+instance (ToJSON (RefSpec a), ToJSON a, Referenceable a) => TopLevel (CoreEntity a)
+instance (ToJSON (RefSpec a), ToJSON a, Referenceable a) => TopLevel (Entity a)
+instance (ToJSON v) => TopLevel (Set v)
+instance (ToJSON v, ToJSON (RefSpec k), Referenceable k) => TopLevel (Map.Map (Ref k) v)
+instance ToJSON a => TopLevel (MaybeObject a)
+instance TopLevel ()
+instance TopLevel Annotation

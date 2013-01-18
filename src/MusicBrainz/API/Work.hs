@@ -67,6 +67,6 @@ viewAliases = runApi $
 
 
 --------------------------------------------------------------------------------
-viewAnnotation :: Form Text MusicBrainz Text
-viewAnnotation = runApi $
-  MB.viewAnnotation <$> (revision :: Form Text MusicBrainz (Ref (Revision Work)))
+viewAnnotation :: Form Text MusicBrainz Annotation
+viewAnnotation = fmap Annotation $ runApi $
+  (MB.viewAnnotation <$> (revision :: Form Text MusicBrainz (Ref (Revision Work))))

@@ -29,10 +29,10 @@ import qualified MusicBrainz.API.Url as Url
 import qualified MusicBrainz.API.Work as Work
 
 import           MusicBrainz (defaultConnectInfo, connectUser, connectDatabase, connectPassword, MusicBrainz, Context, openContext, runMbContext, withTransaction)
-import           MusicBrainz.API.JSON ()
+import           MusicBrainz.API.JSON (TopLevel)
 
 --------------------------------------------------------------------------------
-expose :: ToJSON a => Form Text MusicBrainz a -> Handler Service Service ()
+expose :: TopLevel a => Form Text MusicBrainz a -> Handler Service Service ()
 expose f = do
   parsedJson <- decode <$> readRequestBody (1024*1024)
 
