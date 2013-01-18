@@ -45,6 +45,7 @@ instance ToJSON Alias where
                             , "begin-date" .= aliasBeginDate
                             , "end-date" .= aliasEndDate
                             , "ended" .= aliasEnded
+                            , "primary-for-locale" .= aliasPrimaryForLocale
                             ]
 
 --------------------------------------------------------------------------------
