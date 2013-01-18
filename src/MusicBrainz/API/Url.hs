@@ -20,7 +20,7 @@ import qualified MusicBrainz.Data as MB
 import qualified MusicBrainz.Data.Edit as MB
 
 --------------------------------------------------------------------------------
-findLatest :: Form Text MusicBrainz (Maybe (CoreEntity Url))
+findLatest :: Form Text MusicBrainz (MaybeObject (CoreEntity Url))
 findLatest = FindLatest.findLatest
 
 

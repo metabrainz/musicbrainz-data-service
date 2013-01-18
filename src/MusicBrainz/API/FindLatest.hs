@@ -15,12 +15,13 @@ import Text.Digestive
 import qualified MusicBrainz.Data as MB
 
 import MusicBrainz.API
+import MusicBrainz.API.JSON
 import MusicBrainz hiding (mbid)
 
 --------------------------------------------------------------------------------
 findLatest :: (RefSpec a ~ MBID a, MB.FindLatest a, MB.ResolveReference a, MB.Merge a)
-  => Form Text MusicBrainz (Maybe (CoreEntity a))
+  => Form Text MusicBrainz (MaybeObject (CoreEntity a))
 findLatest = validateM lookup $ "mbid" .: mbid
   where
     lookup mbid' =
-      Success <$> (MB.resolveReference mbid' >>= traverse MB.findLatest)
+      (Success . MaybeObject) <$> (MB.resolveReference mbid' >>= traverse MB.findLatest)

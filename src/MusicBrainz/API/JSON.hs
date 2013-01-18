@@ -4,7 +4,7 @@
 {-# LANGUAGE RecordWildCards #-}
 {-# LANGUAGE OverloadedStrings #-}
 module MusicBrainz.API.JSON
-    ( RefObject(..) ) where
+    ( MaybeObject(..), RefObject(..) ) where
 
 import Control.Lens (view, remit)
 import Data.Aeson
@@ -162,6 +162,14 @@ newtype RefObject a = RefObject (Ref a)
 
 instance (Referenceable a, ToJSON (RefSpec a)) => ToJSON (RefObject a) where
   toJSON (RefObject r) = object [ "ref" .= r ]
+
+
+--------------------------------------------------------------------------------
+newtype MaybeObject a = MaybeObject (Maybe a)
+
+instance ToJSON a => ToJSON (MaybeObject a) where
+  toJSON (MaybeObject (Just a)) = toJSON a
+  toJSON (MaybeObject Nothing)  = object []
 
 
 --------------------------------------------------------------------------------

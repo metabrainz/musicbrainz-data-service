@@ -21,7 +21,7 @@ import qualified MusicBrainz.Data.Edit as MB
 import           MusicBrainz.Data.Label ()
 
 --------------------------------------------------------------------------------
-findLatest :: Form Text MusicBrainz (Maybe (CoreEntity Label))
+findLatest :: Form Text MusicBrainz (MaybeObject (CoreEntity Label))
 findLatest = FindLatest.findLatest
 
 

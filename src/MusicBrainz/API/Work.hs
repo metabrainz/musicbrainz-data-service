@@ -25,7 +25,7 @@ import qualified MusicBrainz.Data as MB
 import           MusicBrainz.API.JSON
 
 --------------------------------------------------------------------------------
-findLatest :: Form Text MusicBrainz (Maybe (CoreEntity Work))
+findLatest :: Form Text MusicBrainz (MaybeObject (CoreEntity Work))
 findLatest = FindLatest.findLatest
 
 

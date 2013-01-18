@@ -21,7 +21,7 @@ import qualified MusicBrainz.Data as MB
 import qualified MusicBrainz.Data.Edit as MB
 
 --------------------------------------------------------------------------------
-findLatest :: Form Text MusicBrainz (Maybe (CoreEntity Artist))
+findLatest :: Form Text MusicBrainz (MaybeObject (CoreEntity Artist))
 findLatest = FindLatest.findLatest
 
 
