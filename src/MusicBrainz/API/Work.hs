@@ -51,7 +51,7 @@ tree =
   WorkTree <$> "work" .: work
            <*> pure mempty
            <*> pure mempty
-           <*> pure ""
+           <*> "annotation" .: (text Nothing)
            <*> pure mempty -- (Set.fromList <$> "iswcs" .: listOf ("iswc" :. iswc))
   where
     iswcField =
