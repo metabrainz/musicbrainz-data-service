@@ -10,6 +10,10 @@ import Control.Lens (view, remit)
 import Data.Aeson
 import Network.URI (URI)
 
+import qualified Data.HashMap.Strict as HMap
+import qualified Data.Map as Map
+import qualified Data.Text as Text
+
 import MusicBrainz
 
 --------------------------------------------------------------------------------
@@ -157,3 +161,17 @@ newtype RefObject a = RefObject (Ref a)
 
 instance (Referenceable a, ToJSON (RefSpec a)) => ToJSON (RefObject a) where
   toJSON (RefObject r) = object [ "ref" .= r ]
+
+
+--------------------------------------------------------------------------------
+instance (ToJSON v, ToJSON (RefSpec k), Referenceable k) => ToJSON (Map.Map (Ref k) v) where
+  toJSON = Object . HMap.fromList . Map.toList . Map.mapKeys showRef . Map.map toJSON
+    where
+      showRef r = case toJSON r of
+        String s -> s
+        Number n -> Text.pack $ show n
+        _ -> error "Reference cannot be used a key"
+
+--------------------------------------------------------------------------------
+instance ToJSON ISWC where
+  toJSON = toJSON . view (remit iswc)

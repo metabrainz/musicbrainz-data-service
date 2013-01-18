@@ -20,6 +20,7 @@ import qualified MusicBrainz.API.Artist as Artist
 import qualified MusicBrainz.API.ArtistType as ArtistType
 import qualified MusicBrainz.API.Edit as Edit
 import qualified MusicBrainz.API.Gender as Gender
+import qualified MusicBrainz.API.Iswc as Iswc
 import qualified MusicBrainz.API.Label as Label
 import qualified MusicBrainz.API.Recording as Recording
 import qualified MusicBrainz.API.Release as Release
@@ -99,6 +100,8 @@ serviceInitContext ctxInit = makeSnaplet "service" "musicbrainz-data HTTP servic
     , ("/edit/open", expose Edit.open)
 
     , ("/gender/add", expose Gender.add)
+
+    , ("/iswc/find-by-works", expose Iswc.findByWorks)
 
     , ("/label/create", expose Label.create)
     , ("/label/find-latest", expose Label.findLatest)
