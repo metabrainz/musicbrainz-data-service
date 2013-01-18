@@ -6,6 +6,7 @@ module MusicBrainz.API.Work
     , create
     , update
     , viewAliases
+    , viewAnnotation
     ) where
 
 import           Control.Applicative
@@ -63,3 +64,9 @@ tree =
 viewAliases :: Form Text MusicBrainz (Set.Set Alias)
 viewAliases = runApi $
   MB.viewAliases <$> (revision :: Form Text MusicBrainz (Ref (Revision Work)))
+
+
+--------------------------------------------------------------------------------
+viewAnnotation :: Form Text MusicBrainz Text
+viewAnnotation = runApi $
+  MB.viewAnnotation <$> (revision :: Form Text MusicBrainz (Ref (Revision Work)))

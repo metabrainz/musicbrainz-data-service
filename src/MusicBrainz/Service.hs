@@ -124,6 +124,7 @@ serviceInitContext ctxInit = makeSnaplet "service" "musicbrainz-data HTTP servic
     , ("/work/find-latest", expose Work.findLatest)
     , ("/work/update", expose Work.update)
     , ("/work/view-aliases", expose Work.viewAliases)
+    , ("/work/view-annotation", expose Work.viewAnnotation)
     , ("/work/view-revision", expose Work.viewRevision)
     ]
 
