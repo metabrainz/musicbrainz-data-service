@@ -7,7 +7,7 @@ import           Control.Exception (SomeException, try)
 import           Control.Monad
 import           Control.Monad.IO.Class (liftIO)
 import           Control.Monad.State.Class (gets)
-import           Data.Aeson (decode, encode, ToJSON, Value)
+import           Data.Aeson (decode, encode, Value)
 import           Data.Configurator (lookupDefault)
 import           Data.Text (Text)
 import           Snap (Initializer, SnapletInit, makeSnaplet, Handler, getSnapletUserConfig, addRoutes)
@@ -121,6 +121,7 @@ serviceInitContext ctxInit = makeSnaplet "service" "musicbrainz-data HTTP servic
     , ("/url/view-revision", expose Url.viewRevision)
 
     , ("/work/create", expose Work.create)
+    , ("/work/eligible-for-cleanup", expose Work.eligibleForCleanup)
     , ("/work/find-latest", expose Work.findLatest)
     , ("/work/update", expose Work.update)
     , ("/work/view-aliases", expose Work.viewAliases)

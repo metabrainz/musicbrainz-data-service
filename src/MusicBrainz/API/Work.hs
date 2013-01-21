@@ -7,6 +7,7 @@ module MusicBrainz.API.Work
     , update
     , viewAliases
     , viewAnnotation
+    , eligibleForCleanup
     ) where
 
 import           Control.Applicative
@@ -63,10 +64,20 @@ tree =
 --------------------------------------------------------------------------------
 viewAliases :: Form Text MusicBrainz (Set.Set Alias)
 viewAliases = runApi $
-  MB.viewAliases <$> (revision :: Form Text MusicBrainz (Ref (Revision Work)))
+  MB.viewAliases <$> workRevision
 
 
 --------------------------------------------------------------------------------
 viewAnnotation :: Form Text MusicBrainz Annotation
-viewAnnotation = fmap Annotation $ runApi $
-  (MB.viewAnnotation <$> (revision :: Form Text MusicBrainz (Ref (Revision Work))))
+viewAnnotation = fmap Annotation $ runApi $ MB.viewAnnotation <$> workRevision
+
+
+--------------------------------------------------------------------------------
+eligibleForCleanup :: Form Text MusicBrainz EligibleForCleanup
+eligibleForCleanup = fmap EligibleForCleanup $ runApi $
+  MB.eligibleForCleanup <$> workRevision
+
+
+--------------------------------------------------------------------------------
+workRevision :: Form Text MusicBrainz (Ref (Revision Work))
+workRevision = revision

@@ -7,6 +7,7 @@ module MusicBrainz.API.JSON
     ( Annotation(..)
     , MaybeObject(..)
     , RefObject(..)
+    , EligibleForCleanup(..)
     , TopLevel
     ) where
 
@@ -198,6 +199,14 @@ newtype Annotation = Annotation Text
 instance ToJSON Annotation where
   toJSON (Annotation t) = object [ "annotation" .= t ]
 
+
+--------------------------------------------------------------------------------
+newtype EligibleForCleanup = EligibleForCleanup Bool
+
+instance ToJSON EligibleForCleanup where
+  toJSON (EligibleForCleanup e) = object [ "eligible" .= e ]
+
+
 --------------------------------------------------------------------------------
 class ToJSON a => TopLevel a
 
@@ -209,3 +218,4 @@ instance (ToJSON v, ToJSON (RefSpec k), Referenceable k) => TopLevel (Map.Map (R
 instance ToJSON a => TopLevel (MaybeObject a)
 instance TopLevel ()
 instance TopLevel Annotation
+instance TopLevel EligibleForCleanup
