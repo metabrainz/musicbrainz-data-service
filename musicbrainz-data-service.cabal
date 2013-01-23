@@ -26,6 +26,7 @@ executable musicbrainz-data-service
     snap,
     snap-core,
     snap-server,
+    stm,
     text,
     transformers,
     unordered-containers
