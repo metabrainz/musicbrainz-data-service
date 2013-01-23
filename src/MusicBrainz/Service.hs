@@ -16,6 +16,7 @@ import           Data.Foldable (forM_)
 import           Data.Maybe (catMaybes)
 import           Data.Monoid (mempty)
 import           Data.Text (Text)
+import           Data.Time (UTCTime, getCurrentTime, diffUTCTime)
 import           Snap (Initializer, SnapletInit, makeSnaplet, Handler, getSnapletUserConfig, addRoutes)
 import           Snap.Core (writeLBS, setContentType, modifyResponse, setResponseCode, readRequestBody, getsRequest, getHeader)
 import           Snap.Snaplet.Session.Common (mkCSRFToken, mkRNG, RNG)
@@ -58,15 +59,16 @@ expose f = do
       -- call.
       Just token <- fmap (fmap Encoding.decodeUtf8) $ getsRequest (getHeader "MB-Session")
       sessionStore <- gets openSessions
-      context <- liftIO $ atomically $ do
+      session <- liftIO $ atomically $ do
         ss <- readTVar sessionStore
         takeTMVar (ss Map.! token)
 
-      outcome <- liftIO (try (runMbContext context (digestJSON f json')))
+      outcome <- liftIO (try (runMbContext (sessionContext session) (digestJSON f json')))
 
+      now <- liftIO getCurrentTime
       liftIO $ atomically $ do
         ss <- readTVar sessionStore
-        putTMVar (ss Map.! token) context
+        putTMVar (ss Map.! token) session { lastUsed = now }
 
       modifyResponse (setContentType "application/json")
       case outcome of
@@ -95,8 +97,14 @@ type SessionToken = Text
 
 --------------------------------------------------------------------------------
 data Service = Service { connectInfo :: ConnectInfo
-                       , openSessions :: TVar (Map.Map SessionToken (TMVar Context))
+                       , openSessions :: TVar (Map.Map SessionToken (TMVar Session))
                        , rng :: RNG
+                       }
+
+
+--------------------------------------------------------------------------------
+data Session = Session { lastUsed :: UTCTime
+                       , sessionContext :: Context
                        }
 
 
@@ -110,9 +118,10 @@ openSession = do
   context <- gets connectInfo >>= openContext
 
   runMbContext context begin
+  now <- liftIO getCurrentTime
 
   liftIO $ atomically $ do
-    s <- newTMVar context
+    s <- newTMVar (Session now context)
     modifyTVar sessionStore (Map.insert token s)
 
   writeLBS . encode $ object [ "token" .= token ]
@@ -133,7 +142,7 @@ closeSession = do
         Just <$> takeTMVar session
       Nothing -> return Nothing
 
-  forM_ context $ \c -> runMbContext c (MusicBrainz.commit)
+  forM_ context $ \c -> runMbContext (sessionContext c) (MusicBrainz.commit)
 
 
 --------------------------------------------------------------------------------
@@ -204,15 +213,27 @@ serviceInitContext ctxInit = makeSnaplet "service" "musicbrainz-data HTTP servic
 
 
 --------------------------------------------------------------------------------
-reaper :: TVar (Map.Map SessionToken (TMVar Context)) -> IO ()
+reaper :: TVar (Map.Map SessionToken (TMVar Session)) -> IO ()
 reaper sessionStore = forever $ do
   threadDelay (1 * 1000000)
+
+  now <- getCurrentTime
+  let isStale session = now `diffUTCTime` (lastUsed session) > 5
+
   toReap <- atomically $ do
     sessions <- readTVar sessionStore
     dead <- fmap catMaybes $ forM (Map.assocs sessions) $
-      \(token, c) -> fmap ((token, )) <$> tryReadTMVar c
+      \(token, c) -> do
+        c <- tryReadTMVar c
+        case c of
+          Just inactiveSession ->
+            return $
+              if isStale inactiveSession
+                then Just (token, inactiveSession)
+                else Nothing
+          Nothing -> return Nothing
 
     writeTVar sessionStore (foldl (flip Map.delete) sessions $ map fst dead)
     return $ map snd dead
 
-  forM_ toReap $ \c -> runMbContext c rollback
+  forM_ toReap $ \c -> runMbContext (sessionContext c) rollback

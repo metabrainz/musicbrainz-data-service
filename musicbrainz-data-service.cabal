@@ -28,6 +28,7 @@ executable musicbrainz-data-service
     snap-server,
     stm,
     text,
+    time,
     transformers,
     unordered-containers
   ghc-options: -Wall -fwarn-tabs -funbox-strict-fields -O2
