@@ -56,7 +56,7 @@ expose f = do
           -- There was indeed an exception, so lets render that back to the
           -- client.
           modifyResponse (setResponseCode 500)
-          writeLBS . encode $ Map.fromList [("error"::Text, show exception)]
+          writeLBS . encode $ object [ "error" .= show exception ]
 
         Right (view, ret') ->
           case ret' of
