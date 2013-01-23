@@ -11,7 +11,7 @@ module MusicBrainz.API.JSON
     , TopLevel
     ) where
 
-import Control.Lens (view, remit)
+import Control.Lens (view, re)
 import Data.Aeson
 import Data.Set (Set)
 import Data.Text (Text)
@@ -25,7 +25,7 @@ import MusicBrainz
 
 --------------------------------------------------------------------------------
 instance ToJSON (MBID a) where
-  toJSON = toJSON . view (remit mbid)
+  toJSON = toJSON . view (re mbid)
 
 
 --------------------------------------------------------------------------------
@@ -190,7 +190,7 @@ instance (ToJSON v, ToJSON (RefSpec k), Referenceable k) => ToJSON (Map.Map (Ref
 
 --------------------------------------------------------------------------------
 instance ToJSON ISWC where
-  toJSON = toJSON . view (remit iswc)
+  toJSON = toJSON . view (re iswc)
 
 
 --------------------------------------------------------------------------------
