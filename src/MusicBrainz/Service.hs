@@ -1,16 +1,19 @@
+{-# LANGUAGE TupleSections #-}
 {-# LANGUAGE OverloadedStrings #-}
 {-# LANGUAGE ScopedTypeVariables #-}
 module MusicBrainz.Service (serviceInit, serviceInitContext) where
 
-import           Control.Applicative ((<*>), (<$>))
-import           Control.Concurrent.STM (TVar, TMVar, atomically, newTVar, newTMVar, readTVar, takeTMVar, putTMVar, writeTVar, modifyTVar)
+import           Control.Applicative ((<*>), (<$>), pure)
+import           Control.Concurrent (forkIO, threadDelay)
+import           Control.Concurrent.STM (TVar, TMVar, atomically, newTVar, newTMVar, readTVar, takeTMVar, putTMVar, writeTVar, modifyTVar, tryReadTMVar)
 import           Control.Exception (SomeException, try)
-import           Control.Monad (forM)
+import           Control.Monad (forever, forM)
 import           Control.Monad.IO.Class (liftIO)
 import           Control.Monad.State.Class (gets)
 import           Data.Aeson (decode, encode, Value, object, (.=))
 import           Data.Configurator (lookupDefault)
 import           Data.Foldable (forM_)
+import           Data.Maybe (catMaybes)
 import           Data.Monoid (mempty)
 import           Data.Text (Text)
 import           Snap (Initializer, SnapletInit, makeSnaplet, Handler, getSnapletUserConfig, addRoutes)
@@ -33,7 +36,7 @@ import qualified MusicBrainz.API.ReleaseGroup as ReleaseGroup
 import qualified MusicBrainz.API.Url as Url
 import qualified MusicBrainz.API.Work as Work
 
-import           MusicBrainz (defaultConnectInfo, connectUser, connectDatabase, connectPassword, MusicBrainz, Context, openContext, runMbContext, begin, ConnectInfo(..), commit)
+import           MusicBrainz (defaultConnectInfo, connectUser, connectDatabase, connectPassword, MusicBrainz, Context, openContext, runMbContext, begin, ConnectInfo(..), commit, rollback)
 import           MusicBrainz.API.JSON (TopLevel)
 
 --------------------------------------------------------------------------------
@@ -192,6 +195,24 @@ serviceInitContext ctxInit = makeSnaplet "service" "musicbrainz-data HTTP servic
     , ("/work/view-revision", expose Work.viewRevision)
     ]
 
+  sessionStore <- liftIO (atomically $ newTVar mempty)
+  liftIO $ forkIO $ reaper sessionStore
+
   Service <$> ctxInit
-          <*> liftIO (atomically $ newTVar mempty)
+          <*> pure sessionStore
           <*> liftIO mkRNG
+
+
+--------------------------------------------------------------------------------
+reaper :: TVar (Map.Map SessionToken (TMVar Context)) -> IO ()
+reaper sessionStore = forever $ do
+  threadDelay (1 * 1000000)
+  toReap <- atomically $ do
+    sessions <- readTVar sessionStore
+    dead <- fmap catMaybes $ forM (Map.assocs sessions) $
+      \(token, c) -> fmap ((token, )) <$> tryReadTMVar c
+
+    writeTVar sessionStore (foldl (flip Map.delete) sessions $ map fst dead)
+    return $ map snd dead
+
+  forM_ toReap $ \c -> runMbContext c rollback
