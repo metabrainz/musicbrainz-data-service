@@ -33,4 +33,4 @@ create = Create.create $ (UrlTree <$> "url" .: url
 --------------------------------------------------------------------------------
 viewRevision :: Form Text MusicBrainz (CoreEntity Label)
 viewRevision = runApi $
-  MB.viewRevision <$> "revision" .: revision
+  MB.viewRevision <$> revision

@@ -21,7 +21,7 @@ create :: MB.Create a
 create tree =
   fmap RefObject $ runApi $
     MB.withEdit
-      <$> "edit" .: edit
+      <$> edit
       <*> (MB.create
              <$> editor
              <*> tree)

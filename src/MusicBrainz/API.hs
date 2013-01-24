@@ -44,7 +44,7 @@ import MusicBrainz.Data
 --------------------------------------------------------------------------------
 {-| Parse an MBID parameter. -}
 mbid :: Monad m => Form Text m (MBID a)
-mbid = validate parse (string Nothing)
+mbid = "mbid" .: validate parse (string Nothing)
   where parse s = case s ^? MB.mbid of
           Just mbid' -> Success mbid'
           Nothing -> Error "Could not parse MBID"

@@ -7,7 +7,7 @@ import           Control.Exception (SomeException, try)
 import           Control.Monad
 import           Control.Monad.IO.Class (liftIO)
 import           Control.Monad.State.Class (gets)
-import           Data.Aeson (decode, encode, Value)
+import           Data.Aeson (decode, encode, Value, object, (.=))
 import           Data.Configurator (lookupDefault)
 import           Data.Text (Text)
 import           Snap (Initializer, SnapletInit, makeSnaplet, Handler, getSnapletUserConfig, addRoutes)

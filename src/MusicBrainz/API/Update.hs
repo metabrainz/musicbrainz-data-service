@@ -22,7 +22,7 @@ update :: (MB.ResolveReference (Revision a), MB.Update a)
 update tree =
   fmap RefObject $ runApi $
     MB.withEdit
-      <$> "edit" .: edit
+      <$> edit
       <*> (MB.update
              <$> editor
              <*> revision

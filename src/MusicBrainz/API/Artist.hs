@@ -38,4 +38,4 @@ create = Create.create $
 --------------------------------------------------------------------------------
 viewRevision :: Form Text MusicBrainz (CoreEntity Artist)
 viewRevision = runApi $
-  MB.viewRevision <$> "revision" .: revision
+  MB.viewRevision <$> revision

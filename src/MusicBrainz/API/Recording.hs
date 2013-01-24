@@ -24,4 +24,4 @@ findLatest = FindLatest.findLatest
 --------------------------------------------------------------------------------
 viewRevision :: Form Text MusicBrainz (CoreEntity Recording)
 viewRevision = runApi $
-  MB.viewRevision <$> "revision" .: revision
+  MB.viewRevision <$> revision

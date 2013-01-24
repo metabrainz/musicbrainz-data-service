@@ -21,7 +21,7 @@ import MusicBrainz hiding (mbid)
 --------------------------------------------------------------------------------
 findLatest :: (RefSpec a ~ MBID a, MB.FindLatest a, MB.ResolveReference a, MB.Merge a)
   => Form Text MusicBrainz (MaybeObject (CoreEntity a))
-findLatest = validateM lookup $ "mbid" .: mbid
+findLatest = validateM lookup mbid
   where
     lookup mbid' =
       (Success . MaybeObject) <$> (MB.resolveReference mbid' >>= traverse MB.findLatest)
