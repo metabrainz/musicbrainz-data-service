@@ -53,9 +53,9 @@ tree =
            <*> pure mempty
            <*> pure mempty
            <*> "annotation" .: (text Nothing)
-           <*> pure mempty -- (Set.fromList <$> "iswcs" .: listOf ("iswc" :. iswc))
+           <*> (Set.fromList <$> "iswcs" .: listOf (const $ "iswc" .: iswcF) Nothing)
   where
-    iswcField =
+    iswcF =
       validate (\input -> case input ^? iswc of
                   Nothing -> Error "Invalid ISWC"
                   Just i -> return i) nonEmptyText
