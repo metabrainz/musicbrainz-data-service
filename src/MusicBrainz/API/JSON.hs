@@ -44,7 +44,7 @@ instance (ToJSON a, ToJSON (Ref a)) => ToJSON (Entity a) where
 
 
 --------------------------------------------------------------------------------
-instance ToJSON Alias where
+instance ToJSON (Alias a) where
   toJSON Alias{..} = object [ "name" .= aliasName
                             , "sort-name" .= aliasSortName
                             , "locale" .= aliasLocale

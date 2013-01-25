@@ -30,7 +30,7 @@ create :: Form Text MusicBrainz (RefObject (Revision Artist))
 create = Create.create $
   ArtistTree <$> "artist" .: artist
              <*> pure Set.empty
-             <*> pure Set.empty
+             <*> aliases
              <*> pure Set.empty
              <*> pure ""
 

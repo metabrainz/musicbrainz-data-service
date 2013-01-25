@@ -30,7 +30,7 @@ create :: Form Text MusicBrainz (RefObject (Revision Label))
 create = Create.create $
   LabelTree <$> "label" .: label
             <*> pure Set.empty
-            <*> pure Set.empty
+            <*> aliases
             <*> pure Set.empty
             <*> pure ""
 

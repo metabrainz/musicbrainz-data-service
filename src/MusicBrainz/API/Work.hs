@@ -51,7 +51,7 @@ tree :: Form Text MusicBrainz (Tree Work)
 tree =
   WorkTree <$> "work" .: work
            <*> pure mempty
-           <*> pure mempty
+           <*> aliases
            <*> "annotation" .: (text Nothing)
            <*> (Set.fromList <$> "iswcs" .: listOf (const $ "iswc" .: iswcF) Nothing)
   where
@@ -62,7 +62,7 @@ tree =
 
 
 --------------------------------------------------------------------------------
-viewAliases :: Form Text MusicBrainz (Set.Set Alias)
+viewAliases :: Form Text MusicBrainz (Set.Set (Alias Work))
 viewAliases = runApi $
   MB.viewAliases <$> workRevision
 

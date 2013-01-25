@@ -19,6 +19,9 @@ module MusicBrainz.API
     , url
     , work
 
+      -- ** Tree data
+    , aliases
+
       -- * Running API Calls
     , runApi
 
@@ -34,6 +37,7 @@ import Network.URI (parseURI)
 import Text.Digestive
 
 import Data.Set ()
+import qualified Data.Set as Set
 import qualified Data.Text as T
 
 import MusicBrainz hiding (mbid, labelCode)
@@ -231,3 +235,20 @@ edit = "edit" .: editRef
 revision :: ResolveReference (Revision a) => Form Text MusicBrainz (Ref (Revision a))
 revision = "revision" .: revisionRef
   where revisionRef = ref "Invalid revision reference"
+
+
+--------------------------------------------------------------------------------
+aliases :: ResolveReference (AliasType a) => Form Text MusicBrainz (Set.Set (Alias a))
+aliases = Set.fromList <$> "aliases" .: listOf (const alias) Nothing
+  where
+    alias = Alias <$> "name" .: nonEmptyText
+                  <*> "sort-name" .: nonEmptyText
+                  <*> beginDate
+                  <*> endDate
+                  <*> ended
+                  <*> "type" .: aliasTypeRef
+                  <*> "locale" .: locale
+                  <*> "primary-for-locale" .: bool Nothing
+    locale = validate (\t -> if T.null t then Success Nothing else Success (Just t)) $
+      text Nothing
+    aliasTypeRef = optionalRef "Invalid alias type reference"
