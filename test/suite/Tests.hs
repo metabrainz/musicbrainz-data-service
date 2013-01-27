@@ -119,7 +119,7 @@ testArtistFindLatest = testMb "/find-latest" $ do
   where
     buildRequest artist = do
       postJson "/artist/find-latest"
-        [aesonQQ|{ "mbid": <| dereference (coreRef artist) ^. remit mbid |> }|]
+        [aesonQQ|{ "mbid": <| dereference (coreRef artist) ^. re mbid |> }|]
 
 --------------------------------------------------------------------------------
 testAddArtistType :: MusicBrainzTest
@@ -167,7 +167,7 @@ testLabelFindLatest = testMb "/find-latest" $ do
   where
     buildRequest label = do
       postJson "/label/find-latest"
-        [aesonQQ|{ "mbid": <| dereference (coreRef label) ^. remit mbid |> }|]
+        [aesonQQ|{ "mbid": <| dereference (coreRef label) ^. re mbid |> }|]
 
     labelTree = LabelTree { labelData = Label { labelName = "Warp Records"
                                               , labelSortName = "Warp Records"
@@ -202,7 +202,7 @@ testRecordingFindLatest = testMb "/find-latest" $ do
   where
     buildRequest recording = do
       postJson "/recording/find-latest"
-        [aesonQQ|{ "mbid": <| dereference (coreRef recording) ^. remit mbid |> }|]
+        [aesonQQ|{ "mbid": <| dereference (coreRef recording) ^. re mbid |> }|]
 
     recordingTree ac =
       RecordingTree { recordingData = Recording { recordingName = "Warp Records"
@@ -234,7 +234,7 @@ testReleaseFindLatest = testMb "/find-latest" $ do
   where
     buildRequest release = do
       postJson "/release/find-latest"
-        [aesonQQ|{ "mbid": <| dereference (coreRef release) ^. remit mbid |> }|]
+        [aesonQQ|{ "mbid": <| dereference (coreRef release) ^. re mbid |> }|]
 
     dummyRg ac = ReleaseGroupTree { releaseGroupData = ReleaseGroup { releaseGroupName = "Dummy"
                                                                     , releaseGroupArtistCredit = ac
@@ -275,7 +275,7 @@ testUrlFindLatest = testMb "/find-latest" $ do
   where
     buildRequest url = do
       postJson "/url/find-latest"
-        [aesonQQ|{ "mbid": <| dereference (coreRef url) ^. remit mbid |> }|]
+        [aesonQQ|{ "mbid": <| dereference (coreRef url) ^. re mbid |> }|]
 
     urlTree = UrlTree { urlData = Url { urlUrl = fromJust (parseURI "http://musicbrainz.org/") }
                       , urlRelationships = mempty
@@ -292,7 +292,7 @@ testWorkFindLatest = testMb "/find-latest" $ do
   where
     buildRequest work = do
       postJson "/work/find-latest"
-        [aesonQQ|{ "mbid": <| dereference (coreRef work) ^. remit mbid |> }|]
+        [aesonQQ|{ "mbid": <| dereference (coreRef work) ^. re mbid |> }|]
 
     workTree = WorkTree { workData = Work { workName = "To a Wild Rose"
                                           , workComment = ""
