@@ -59,9 +59,11 @@ Test-Suite tests
     network,
     snap,
     snap-core,
+    stm,
     test-framework,
     test-framework-hunit,
     text,
+    time,
     transformers,
     unordered-containers
   ghc-options: -Wall -fwarn-tabs -funbox-strict-fields -O2
