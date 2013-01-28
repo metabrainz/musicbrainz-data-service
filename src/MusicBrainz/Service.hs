@@ -1,13 +1,19 @@
 {-# LANGUAGE TupleSections #-}
 {-# LANGUAGE OverloadedStrings #-}
 {-# LANGUAGE ScopedTypeVariables #-}
-module MusicBrainz.Service (serviceInit, serviceInitContext) where
+module MusicBrainz.Service
+    ( serviceInitAutomatic
+    , serviceInit
+    , unsafeRequestContext
+    , openSession
+    , emptySessionStore
+    ) where
 
 import           Control.Applicative ((<*>), (<$>), pure)
 import           Control.Concurrent (forkIO, threadDelay)
 import           Control.Concurrent.STM (TVar, TMVar, atomically, newTVar, newTMVar, readTVar, takeTMVar, putTMVar, writeTVar, modifyTVar, tryReadTMVar)
 import           Control.Exception (SomeException, try)
-import           Control.Monad (forever, forM)
+import           Control.Monad (forever, forM, void)
 import           Control.Monad.IO.Class (liftIO)
 import           Control.Monad.State.Class (gets)
 import           Data.Aeson (decode, encode, Value, object, (.=))
@@ -96,8 +102,10 @@ type SessionToken = Text
 
 
 --------------------------------------------------------------------------------
+type SessionStore = TVar (Map.Map SessionToken (TMVar Session))
+
 data Service = Service { connectInfo :: ConnectInfo
-                       , openSessions :: TVar (Map.Map SessionToken (TMVar Session))
+                       , openSessions :: SessionStore
                        , rng :: RNG
                        }
 
@@ -109,7 +117,7 @@ data Session = Session { lastUsed :: UTCTime
 
 
 --------------------------------------------------------------------------------
-openSession :: Handler Service Service ()
+openSession :: Handler Service Service (SessionToken, Context)
 openSession = do
   -- TODO Handle collisions
   token <- gets rng >>= liftIO . mkCSRFToken
@@ -125,6 +133,7 @@ openSession = do
     modifyTVar sessionStore (Map.insert token s)
 
   writeLBS . encode $ object [ "token" .= token ]
+  return (token, context)
 
 
 --------------------------------------------------------------------------------
@@ -146,70 +155,92 @@ closeSession = do
 
 
 --------------------------------------------------------------------------------
-serviceInit :: SnapletInit Service Service
-serviceInit = serviceInitContext $ do
-  config <- getSnapletUserConfig
-  [db, user, pass] <- liftIO $ forM
-    [ ("database", connectDatabase)
-    , ("username", connectUser)
-    , ("password", connectPassword)
-    ] $ \(k, def) -> lookupDefault (def defaultConnectInfo) config k
-  return $ defaultConnectInfo { connectDatabase = db
-                              , connectUser = user
-                              , connectPassword = pass
-                              }
+serviceInitAutomatic :: SnapletInit Service Service
+serviceInitAutomatic = serviceInit connInfo (liftIO emptySessionStore)
+  where
+    connInfo = do
+      config <- getSnapletUserConfig
+      [db, user, pass] <- liftIO $ forM
+        [ ("database", connectDatabase)
+        , ("username", connectUser)
+        , ("password", connectPassword)
+        ] $ \(k, def) -> lookupDefault (def defaultConnectInfo) config k
+      return $ defaultConnectInfo { connectDatabase = db
+                                  , connectUser = user
+                                  , connectPassword = pass
+                                  }
+
 
 --------------------------------------------------------------------------------
-serviceInitContext :: Initializer Service Service ConnectInfo -> SnapletInit Service Service
-serviceInitContext ctxInit = makeSnaplet "service" "musicbrainz-data HTTP service" Nothing $ do
-  addRoutes
-    [ ("/open-session", openSession)
-    , ("/close-session", closeSession)
+emptySessionStore :: IO SessionStore
+emptySessionStore = atomically $ newTVar mempty
 
-    , ("/artist/create", expose Artist.create)
-    , ("/artist/find-latest", expose Artist.findLatest)
-    , ("/artist/view-revision", expose Artist.viewRevision)
 
-    , ("/artist-type/add", expose ArtistType.add)
+--------------------------------------------------------------------------------
+serviceInit :: Initializer Service Service ConnectInfo
+            -> Initializer Service Service SessionStore
+            -> SnapletInit Service Service
+serviceInit connInfo sessionStore =
+  makeSnaplet "service" "musicbrainz-data HTTP service" Nothing $ do
+    addRoutes
+      [ ("/open-session", void openSession)
+      , ("/close-session", closeSession)
 
-    , ("/edit/add-note", expose Edit.addEditNote)
-    , ("/edit/open", expose Edit.open)
+      , ("/artist/create", expose Artist.create)
+      , ("/artist/find-latest", expose Artist.findLatest)
+      , ("/artist/view-revision", expose Artist.viewRevision)
 
-    , ("/gender/add", expose Gender.add)
+      , ("/artist-type/add", expose ArtistType.add)
 
-    , ("/iswc/find-by-works", expose Iswc.findByWorks)
+      , ("/edit/add-note", expose Edit.addEditNote)
+      , ("/edit/open", expose Edit.open)
 
-    , ("/label/create", expose Label.create)
-    , ("/label/find-latest", expose Label.findLatest)
-    , ("/label/view-revision", expose Label.viewRevision)
+      , ("/gender/add", expose Gender.add)
 
-    , ("/recording/find-latest", expose Recording.findLatest)
-    , ("/recording/view-revision", expose Recording.viewRevision)
+      , ("/iswc/find-by-works", expose Iswc.findByWorks)
 
-    , ("/release/find-latest", expose Release.findLatest)
-    , ("/release/view-revision", expose Release.viewRevision)
+      , ("/label/create", expose Label.create)
+      , ("/label/find-latest", expose Label.findLatest)
+      , ("/label/view-revision", expose Label.viewRevision)
 
-    , ("/release-group/create", expose ReleaseGroup.create)
-    , ("/release-group/view-revision", expose ReleaseGroup.viewRevision)
+      , ("/recording/find-latest", expose Recording.findLatest)
+      , ("/recording/view-revision", expose Recording.viewRevision)
 
-    , ("/url/find-latest", expose Url.findLatest)
-    , ("/url/view-revision", expose Url.viewRevision)
+      , ("/release/find-latest", expose Release.findLatest)
+      , ("/release/view-revision", expose Release.viewRevision)
 
-    , ("/work/create", expose Work.create)
-    , ("/work/eligible-for-cleanup", expose Work.eligibleForCleanup)
-    , ("/work/find-latest", expose Work.findLatest)
-    , ("/work/update", expose Work.update)
-    , ("/work/view-aliases", expose Work.viewAliases)
-    , ("/work/view-annotation", expose Work.viewAnnotation)
-    , ("/work/view-revision", expose Work.viewRevision)
-    ]
+      , ("/release-group/create", expose ReleaseGroup.create)
+      , ("/release-group/view-revision", expose ReleaseGroup.viewRevision)
 
-  sessionStore <- liftIO (atomically $ newTVar mempty)
-  liftIO $ forkIO $ reaper sessionStore
+      , ("/url/find-latest", expose Url.findLatest)
+      , ("/url/view-revision", expose Url.viewRevision)
 
-  Service <$> ctxInit
-          <*> pure sessionStore
-          <*> liftIO mkRNG
+      , ("/work/create", expose Work.create)
+      , ("/work/eligible-for-cleanup", expose Work.eligibleForCleanup)
+      , ("/work/find-latest", expose Work.findLatest)
+      , ("/work/update", expose Work.update)
+      , ("/work/view-aliases", expose Work.viewAliases)
+      , ("/work/view-annotation", expose Work.viewAnnotation)
+      , ("/work/view-revision", expose Work.viewRevision)
+      ]
+
+    s <- sessionStore
+    liftIO $ forkIO $ reaper s
+
+    Service <$> connInfo
+            <*> pure s
+            <*> liftIO mkRNG
+
+
+--------------------------------------------------------------------------------
+unsafeRequestContext :: SessionToken -> Handler Service Service Context
+unsafeRequestContext token = do
+  sessionStore <- gets openSessions
+  liftIO $ atomically $ do
+    session <- (Map.! token) <$> readTVar sessionStore
+    s <- takeTMVar session
+    putTMVar session s
+    return (sessionContext s)
 
 
 --------------------------------------------------------------------------------

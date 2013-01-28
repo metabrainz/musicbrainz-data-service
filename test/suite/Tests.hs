@@ -3,10 +3,10 @@
 {-# LANGUAGE QuasiQuotes #-}
 module Main (main) where
 
+import           Prelude hiding (init)
 import           Control.Applicative
 import           Control.Lens hiding (Context)
-import           Control.Monad (forM_, void)
-import           Control.Monad.Reader (ask)
+import           Control.Monad (forM_)
 import           Control.Monad.Trans
 import           Data.Aeson (encode)
 import           Data.Aeson.QQ (aesonQQ)
@@ -15,13 +15,16 @@ import qualified Data.ByteString.Lazy as LBS
 import           Data.Configurator (load, lookupDefault, Worth(..))
 import           Data.Maybe (fromJust)
 import           Data.Monoid (mempty)
-import           Data.Text
+import           Data.Text (pack)
 import           Network.URI (parseURI)
-import           Snap.Core
 import           Snap.Snaplet (runSnaplet)
 import           Snap.Test hiding (buildRequest)
 import           Test.Framework (buildTest, defaultMain, testGroup, Test)
 import           Test.Framework.Providers.HUnit (testCase)
+
+import qualified Data.Text.Encoding as Encoding
+import qualified Snap.Test as Snap
+import qualified Snap.Snaplet.Test as Snaplet
 
 import           MusicBrainz
 import           MusicBrainz.Edit
@@ -29,7 +32,7 @@ import qualified MusicBrainz.Data as Data
 import           MusicBrainz.Data.ArtistCredit
 import qualified MusicBrainz.Data.Edit as Data
 import qualified MusicBrainz.Data.Editor as Editor
-import           MusicBrainz.Service (serviceInitContext)
+import           MusicBrainz.Service (serviceInit, emptySessionStore, openSession)
 
 import           Data.Aeson.Generic (toJSON)
 import           Data.Aeson.Types (object)
@@ -49,9 +52,7 @@ main = defaultMain [buildTest $ fmap (testGroup "All tests") tests]
         <*> lookupDefault (connectPassword defaultConnectInfo) config "password"
         <*> lookupDefault "musicbrainz_nes" config "database"
 
-      ctx <- openContext dbSettings
-
-      runMbContext ctx $
+      runMb dbSettings $
         forM_
           [ "SET client_min_messages TO warning"
           , "TRUNCATE artist_type CASCADE"
@@ -59,116 +60,103 @@ main = defaultMain [buildTest $ fmap (testGroup "All tests") tests]
           , "TRUNCATE editor CASCADE"
           , "TRUNCATE gender CASCADE"
           , "ALTER SEQUENCE revision_revision_id_seq RESTART 1"
-          , "COMMIT"
           ] $ \q -> execute q ()
+
       return [ testGroup "/artist"
-                 [ testArtistCreate ctx
-                 , testArtistFindLatest ctx
+                 [ testArtistCreate dbSettings
+                 , testArtistFindLatest dbSettings
                  ]
              , testGroup "/artist-type"
-                 [ testAddArtistType ctx
+                 [ testAddArtistType dbSettings
                  ]
              , testGroup "/gender"
-                 [ testGenderAdd ctx
+                 [ testGenderAdd dbSettings
                  ]
              , testGroup "/label"
-                 [ testLabelCreate ctx
-                 , testLabelFindLatest ctx
+                 [ testLabelCreate dbSettings
+                 , testLabelFindLatest dbSettings
                  ]
              , testGroup "/recording"
-                 [ testRecordingFindLatest ctx ]
+                 [ testRecordingFindLatest dbSettings ]
              , testGroup "/release"
-                 [ testReleaseFindLatest ctx ]
+                 [ testReleaseFindLatest dbSettings ]
              , testGroup "/url"
-                 [ testUrlFindLatest ctx ]
+                 [ testUrlFindLatest dbSettings ]
              , testGroup "/work"
-                 [ testWorkFindLatest ctx ]
+                 [ testWorkFindLatest dbSettings ]
              ]
 
 
 --------------------------------------------------------------------------------
-type MusicBrainzTest = Context -> Test
+type MusicBrainzTest = ConnectInfo -> Test
+
 
 --------------------------------------------------------------------------------
 testArtistCreate :: MusicBrainzTest
-testArtistCreate = testMb "/create" $
-  assertApiCall buildRequest
+testArtistCreate c = testCase "/create" $ testMb c $ do
+    ocharles <- lift $ registerEditor
+    editId <- lift $ Data.openEdit
+    postJson "/artist/create" (testJson ocharles editId)
   where
-    buildRequest = do
-      ocharles <- lift $ registerEditor
-      editId <- lift $ Data.openEdit
-      postJson "/artist/create" (testJson ocharles editId)
-      where
-        testJson editor editId = [aesonQQ| {
-            "artist": {
-              "name": "Massive Attack",
-              "sort-name": "Massive Attack"
-            },
-            "editor": <| dereference $ entityRef editor |>,
-            "edit": <| dereference editId |>
-          } |]
+    testJson editor editId = [aesonQQ| {
+        "artist": {
+          "name": "Massive Attack",
+          "sort-name": "Massive Attack"
+        },
+        "editor": <| dereference $ entityRef editor |>,
+        "edit": <| dereference editId |>
+      } |]
 
 
 --------------------------------------------------------------------------------
 testArtistFindLatest :: MusicBrainzTest
-testArtistFindLatest = testMb "/find-latest" $ do
-  artist <- do
+testArtistFindLatest c = testCase "/find-latest" $ testMb c $ do
+  artist <-  lift $ do
     ocharles <- registerEditor
     autoEdit $ Data.create (entityRef ocharles) massiveAttack >>= viewRevision
-  assertApiCall (buildRequest artist)
-  where
-    buildRequest artist = do
-      postJson "/artist/find-latest"
-        [aesonQQ|{ "mbid": <| dereference (coreRef artist) ^. re mbid |> }|]
+  postJson "/artist/find-latest"
+    [aesonQQ|{ "mbid": <| dereference (coreRef artist) ^. re mbid |> }|]
+
 
 --------------------------------------------------------------------------------
 testAddArtistType :: MusicBrainzTest
-testAddArtistType = testMb "/add" $
-  assertApiCall buildRequest
-  where
-    buildRequest = postJson "/artist-type/add" [aesonQQ|{ "name": "Person" }|]
+testAddArtistType c = testCase "/add" $ testMb c $
+  postJson "/artist-type/add" [aesonQQ|{ "name": "Person" }|]
 
 
 --------------------------------------------------------------------------------
 testGenderAdd :: MusicBrainzTest
-testGenderAdd = testMb "/add" $
-  assertApiCall buildRequest
-  where
-    buildRequest = postJson "/gender/add" [aesonQQ|{ "name": "Female" }|]
+testGenderAdd c = testCase "/add" $ testMb c $
+  postJson "/gender/add" [aesonQQ|{ "name": "Female" }|]
 
 
 --------------------------------------------------------------------------------
 testLabelCreate :: MusicBrainzTest
-testLabelCreate = testMb "/create" $
-  assertApiCall buildRequest
+testLabelCreate c = testCase "/create" $ testMb c $ do
+  ocharles <- lift $ registerEditor
+  editId <- lift $ Data.openEdit
+  postJson "/label/create" (testJson ocharles editId)
   where
-    buildRequest = do
-      ocharles <- lift $ registerEditor
-      editId <- lift $ Data.openEdit
-      postJson "/label/create" (testJson ocharles editId)
-      where
-        testJson editor editId = [aesonQQ| {
-            "label": {
-              "name": "Warp Records",
-              "sort-name": "Warp Records"
-            },
-            "editor": <| dereference $ entityRef editor |>,
-            "edit": <| dereference editId |>
-          } |]
+    testJson editor editId = [aesonQQ| {
+        "label": {
+          "name": "Warp Records",
+          "sort-name": "Warp Records"
+        },
+        "editor": <| dereference $ entityRef editor |>,
+        "edit": <| dereference editId |>
+      } |]
 
 
 --------------------------------------------------------------------------------
 testLabelFindLatest :: MusicBrainzTest
-testLabelFindLatest = testMb "/find-latest" $ do
-  label <- do
+testLabelFindLatest c = testCase "/find-latest" $ testMb c $ do
+  label <- lift $ do
     ocharles <- registerEditor
     autoEdit $ Data.create (entityRef ocharles) labelTree >>= viewRevision
-  assertApiCall (buildRequest label)
-  where
-    buildRequest label = do
-      postJson "/label/find-latest"
-        [aesonQQ|{ "mbid": <| dereference (coreRef label) ^. re mbid |> }|]
 
+  postJson "/label/find-latest"
+    [aesonQQ|{ "mbid": <| dereference (coreRef label) ^. re mbid |> }|]
+  where
     labelTree = LabelTree { labelData = Label { labelName = "Warp Records"
                                               , labelSortName = "Warp Records"
                                               , labelComment = ""
@@ -188,8 +176,8 @@ testLabelFindLatest = testMb "/find-latest" $ do
 
 --------------------------------------------------------------------------------
 testRecordingFindLatest :: MusicBrainzTest
-testRecordingFindLatest = testMb "/find-latest" $ do
-  recording <- do
+testRecordingFindLatest c = testCase "/find-latest" $ testMb c $ do
+  recording <- lift $ do
     ocharles <- registerEditor
     autoEdit $ do
       artist <- Data.create (entityRef ocharles) massiveAttack >>= viewRevision
@@ -198,12 +186,10 @@ testRecordingFindLatest = testMb "/find-latest" $ do
                                      , acnJoinPhrase = mempty
                                      } ]
       Data.create (entityRef ocharles) (recordingTree ac) >>= viewRevision
-  assertApiCall (buildRequest recording)
-  where
-    buildRequest recording = do
-      postJson "/recording/find-latest"
-        [aesonQQ|{ "mbid": <| dereference (coreRef recording) ^. re mbid |> }|]
 
+  postJson "/recording/find-latest"
+    [aesonQQ|{ "mbid": <| dereference (coreRef recording) ^. re mbid |> }|]
+  where
     recordingTree ac =
       RecordingTree { recordingData = Recording { recordingName = "Warp Records"
                                                 , recordingComment = ""
@@ -219,8 +205,8 @@ testRecordingFindLatest = testMb "/find-latest" $ do
 
 --------------------------------------------------------------------------------
 testReleaseFindLatest :: MusicBrainzTest
-testReleaseFindLatest = testMb "/find-latest" $ do
-  release <- do
+testReleaseFindLatest c = testCase "/find-latest" $ testMb c $ do
+  release <- lift $ do
     ocharles <- registerEditor
     autoEdit $ do
       artist <- Data.create (entityRef ocharles) massiveAttack >>= viewRevision
@@ -230,12 +216,9 @@ testReleaseFindLatest = testMb "/find-latest" $ do
                                      } ]
       rg <- Data.create (entityRef ocharles) (dummyRg ac) >>= viewRevision
       Data.create (entityRef ocharles) (releaseTree ac rg) >>= viewRevision
-  assertApiCall (buildRequest release)
+  postJson "/release/find-latest"
+    [aesonQQ|{ "mbid": <| dereference (coreRef release) ^. re mbid |> }|]
   where
-    buildRequest release = do
-      postJson "/release/find-latest"
-        [aesonQQ|{ "mbid": <| dereference (coreRef release) ^. re mbid |> }|]
-
     dummyRg ac = ReleaseGroupTree { releaseGroupData = ReleaseGroup { releaseGroupName = "Dummy"
                                                                     , releaseGroupArtistCredit = ac
                                                                     , releaseGroupComment = ""
@@ -267,16 +250,13 @@ testReleaseFindLatest = testMb "/find-latest" $ do
 
 --------------------------------------------------------------------------------
 testUrlFindLatest :: MusicBrainzTest
-testUrlFindLatest = testMb "/find-latest" $ do
-  url <- do
+testUrlFindLatest c = testCase "/find-latest" $ testMb c $ do
+  url <- lift $ do
     ocharles <- registerEditor
     autoEdit $ Data.create (entityRef ocharles) urlTree >>= viewRevision
-  assertApiCall (buildRequest url)
+  postJson "/url/find-latest"
+    [aesonQQ|{ "mbid": <| dereference (coreRef url) ^. re mbid |> }|]
   where
-    buildRequest url = do
-      postJson "/url/find-latest"
-        [aesonQQ|{ "mbid": <| dereference (coreRef url) ^. re mbid |> }|]
-
     urlTree = UrlTree { urlData = Url { urlUrl = fromJust (parseURI "http://musicbrainz.org/") }
                       , urlRelationships = mempty
                       }
@@ -284,16 +264,13 @@ testUrlFindLatest = testMb "/find-latest" $ do
 
 --------------------------------------------------------------------------------
 testWorkFindLatest :: MusicBrainzTest
-testWorkFindLatest = testMb "/find-latest" $ do
-  work <- do
+testWorkFindLatest c = testCase "/find-latest" $ testMb c $ do
+  work <- lift $ do
     ocharles <- registerEditor
     autoEdit $ Data.create (entityRef ocharles) workTree >>= viewRevision
-  assertApiCall (buildRequest work)
+  postJson "/work/find-latest"
+    [aesonQQ|{ "mbid": <| dereference (coreRef work) ^. re mbid |> }|]
   where
-    buildRequest work = do
-      postJson "/work/find-latest"
-        [aesonQQ|{ "mbid": <| dereference (coreRef work) ^. re mbid |> }|]
-
     workTree = WorkTree { workData = Work { workName = "To a Wild Rose"
                                           , workComment = ""
                                           , workLanguage = Nothing
@@ -309,26 +286,6 @@ testWorkFindLatest = testMb "/find-latest" $ do
 --------------------------------------------------------------------------------
 postJson :: MonadIO m => BS.ByteString -> Value -> RequestBuilder m ()
 postJson endPoint = postRaw endPoint "application/json" . toStrict . encode
-
-
---------------------------------------------------------------------------------
-testMb :: String -> MusicBrainz a -> Context -> Test
-testMb label action ctx = testCase label . runTest ctx . void $ action
-
-
---------------------------------------------------------------------------------
-assertApiCall :: RequestBuilder MusicBrainz () -> MusicBrainz Response
-assertApiCall buildRequest = do
-  ctx <- ask
-  (_, snap, _) <- liftIO $ runSnaplet (Just "autotest") (serviceInitContext (return ctx))
-  r <- runHandler buildRequest snap
-  liftIO $ assertSuccess r
-  return r
-
-
---------------------------------------------------------------------------------
-runTest :: Context -> MusicBrainz a -> IO a
-runTest ctx = runMbContext ctx . withTransactionRollBack
 
 
 --------------------------------------------------------------------------------
@@ -364,3 +321,22 @@ massiveAttack = ArtistTree { artistData = Artist { artistName = "Massive Attack"
 --------------------------------------------------------------------------------
 registerEditor :: MusicBrainz (Entity Editor)
 registerEditor = Editor.register (Editor "ocharles" "password")
+
+
+--------------------------------------------------------------------------------
+testMb :: ConnectInfo -> RequestBuilder MusicBrainz () -> IO ()
+testMb connInfo buildRequest = do
+    sessions <- emptySessionStore
+    Right (token, context) <- Snaplet.evalHandler (return ()) openSession (init sessions)
+
+    let addMbSessionHeader = addHeader "MB-Session" (Encoding.encodeUtf8 token)
+
+    (_, service, _) <- runSnaplet (Just "autotest") (init sessions)
+    runMbContext context $ do
+      res <- Snap.runHandler (buildRequest >> addMbSessionHeader)
+               service
+      liftIO (assertSuccess res)
+      rollback
+
+  where
+    init sessions = serviceInit (return connInfo) (return sessions)
