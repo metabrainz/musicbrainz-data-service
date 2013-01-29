@@ -51,34 +51,62 @@ import           MusicBrainz (defaultConnectInfo, connectUser, connectDatabase, 
 import           MusicBrainz.API.JSON (TopLevel)
 
 --------------------------------------------------------------------------------
+requestSession :: EitherT (Handler Service Service ()) (Handler Service Service) Text
+requestSession =
+    EitherT $ note invalidToken . fmap Encoding.decodeUtf8 <$>
+      getsRequest (getHeader "MB-Session")
+  where
+    invalidToken =
+      writeClientError "The MB-Session header was required but could not be parsed"
+
+
+--------------------------------------------------------------------------------
+lockSession :: EitherT (Handler Service Service ()) (Handler Service Service) Session
+lockSession = do
+    token <- requestSession
+    sessionStore <- lift $ gets openSessions
+
+    EitherT $ note (noSession token) <$> do
+      liftIO $ atomically $ do
+        ss <- readTVar sessionStore
+        traverse takeTMVar $ Map.lookup token ss
+  where
+    noSession token =
+      writeClientError $ T.concat
+        [ "No session could be found with the requested MB-Session token '"
+        , token
+        , "'" ]
+
+--------------------------------------------------------------------------------
+unlockSession :: Session -> EitherT (Handler Service Service ()) (Handler Service Service) ()
+unlockSession session = do
+    token <- requestSession
+    sessionStore <- lift $ gets openSessions
+
+    liftIO $ do
+      now <- getCurrentTime
+      atomically $ do
+        ss <- readTVar sessionStore
+        putTMVar (ss Map.! token) session { lastUsed = now }
+
+
+--------------------------------------------------------------------------------
 expose :: TopLevel a => Form Text MusicBrainz a -> Handler Service Service ()
 expose f = do
   modifyResponse (setContentType "application/json")
   eitherT id id $ do
-    -- We need to ensure that a valid token can be found.
-    token <- EitherT $ note invalidToken . fmap Encoding.decodeUtf8 <$> getsRequest (getHeader "MB-Session")
-
-    -- Some sort of token is present, decode the JSON before trying to get
-    -- a session lock.
+    -- Decode the JSON before trying to get a session lock, so we minimize the
+    -- amount of time the session is exclusively locked.
     json' <- EitherT $ note failedTeDecode . decode <$> readRequestBody (1024*1024)
 
-    -- Use that token to exclusively hold a session.
-    sessionStore <- lift $ gets openSessions
-    session <- EitherT $ note noSession <$> do
-      liftIO $ atomically $ do
-        ss <- readTVar sessionStore
-        traverse takeTMVar $ Map.lookup token ss
+    session <- lockSession
 
     -- We run the 'form' that validates the users submitted parameters to the API
     -- call.
     outcome <- liftIO (try (runMbContext (sessionContext session) (digestJSON f json')))
 
     -- Release our lock on the session, and bump up the time it was last used.
-    liftIO $ do
-      now <- getCurrentTime
-      atomically $ do
-        ss <- readTVar sessionStore
-        putTMVar (ss Map.! token) session { lastUsed = now }
+    unlockSession session
 
     case outcome of
       Left (exception :: SomeException) -> do
@@ -91,22 +119,19 @@ expose f = do
   where
     failedTeDecode = writeClientError "Could not parse JSON"
 
-    invalidToken =
-      writeClientError "The MB-Session header was required but could not be parsed"
-
-    noSession =
-      writeClientError "No session could be found with the requested MB-Session token"
-
     invalidParameters view = do
       modifyResponse (setResponseCode 400)
       writeLBS (encode $ jsonErrors view)
 
-    writeClientError = writeError 400
-    writeServerError = writeError 500
 
-    writeError status e = do
-      modifyResponse (setResponseCode status)
-      writeLBS . encode $ object [ "error" .= (e::Text) ]
+--------------------------------------------------------------------------------
+writeClientError = writeError 400
+writeServerError = writeError 500
+
+writeError status e = do
+   modifyResponse (setResponseCode status)
+   writeLBS . encode $ object [ "error" .= (e::Text) ]
+
 
 --------------------------------------------------------------------------------
 type SessionToken = Text
@@ -149,20 +174,22 @@ openSession = do
 
 --------------------------------------------------------------------------------
 closeSession :: Handler Service Service ()
-closeSession = do
-  Just token <- fmap (fmap Encoding.decodeUtf8) $ getsRequest (getHeader "MB-Session")
+closeSession = eitherT id (const $ return ()) $ do
+    token <- requestSession
+    sessionStore <- lift $ gets openSessions
 
-  sessionStore <- gets openSessions
+    liftIO $ do
+      context <- atomically $ do
+        allSessions <- readTVar sessionStore
+        case Map.lookup token allSessions of
+          Just session -> do
+            writeTVar sessionStore (Map.delete token allSessions)
+            Just <$> takeTMVar session
+          Nothing -> return Nothing
 
-  context <- liftIO $ atomically $ do
-    allSessions <- readTVar sessionStore
-    case Map.lookup token allSessions of
-      Just session -> do
-        writeTVar sessionStore (Map.delete token allSessions)
-        Just <$> takeTMVar session
-      Nothing -> return Nothing
+      forM_ context $ \c -> runMbContext (sessionContext c) (MusicBrainz.commit)
 
-  forM_ context $ \c -> runMbContext (sessionContext c) (MusicBrainz.commit)
+    lift $ writeLBS . encode $ object []
 
 
 --------------------------------------------------------------------------------
