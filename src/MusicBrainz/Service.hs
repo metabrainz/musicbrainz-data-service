@@ -4,7 +4,6 @@
 module MusicBrainz.Service
     ( serviceInitAutomatic
     , serviceInit
-    , unsafeRequestContext
     , openSession
     , emptySessionStore
     ) where
@@ -242,17 +241,6 @@ serviceInit connInfo sessionStore =
     Service <$> connInfo
             <*> pure s
             <*> liftIO mkRNG
-
-
---------------------------------------------------------------------------------
-unsafeRequestContext :: SessionToken -> Handler Service Service Context
-unsafeRequestContext token = do
-  sessionStore <- gets openSessions
-  liftIO $ atomically $ do
-    session <- (Map.! token) <$> readTVar sessionStore
-    s <- takeTMVar session
-    putTMVar session s
-    return (sessionContext s)
 
 
 --------------------------------------------------------------------------------
