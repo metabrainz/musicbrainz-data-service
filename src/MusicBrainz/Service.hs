@@ -12,17 +12,21 @@ module MusicBrainz.Service
 import           Control.Applicative ((<*>), (<$>), pure)
 import           Control.Concurrent (forkIO, threadDelay)
 import           Control.Concurrent.STM (TVar, TMVar, atomically, newTVar, newTMVar, readTVar, takeTMVar, putTMVar, writeTVar, modifyTVar, tryReadTMVar)
+import           Control.Error.Util (note)
 import           Control.Exception (SomeException, try)
 import           Control.Monad (forever, forM, void)
 import           Control.Monad.IO.Class (liftIO)
 import           Control.Monad.State.Class (gets)
-import           Data.Aeson (decode, encode, Value, object, (.=))
+import           Control.Monad.Trans (lift)
+import           Control.Monad.Trans.Either (EitherT(..), eitherT, hoistEither, left)
+import           Data.Aeson (decode, encode, object, (.=))
 import           Data.Configurator (lookupDefault)
 import           Data.Foldable (forM_)
 import           Data.Maybe (catMaybes)
 import           Data.Monoid (mempty)
 import           Data.Text (Text)
 import           Data.Time (UTCTime, getCurrentTime, diffUTCTime)
+import           Data.Traversable (traverse)
 import           Snap (Initializer, SnapletInit, makeSnaplet, Handler, getSnapletUserConfig, addRoutes)
 import           Snap.Core (writeLBS, setContentType, modifyResponse, setResponseCode, readRequestBody, getsRequest, getHeader)
 import           Snap.Snaplet.Session.Common (mkCSRFToken, mkRNG, RNG)
@@ -30,6 +34,7 @@ import           Text.Digestive (Form)
 import           Text.Digestive.Aeson (digestJSON, jsonErrors)
 
 import qualified Data.Map as Map
+import qualified Data.Text as T
 import qualified Data.Text.Encoding as Encoding
 import qualified MusicBrainz.API.Artist as Artist
 import qualified MusicBrainz.API.ArtistType as ArtistType
@@ -49,53 +54,60 @@ import           MusicBrainz.API.JSON (TopLevel)
 --------------------------------------------------------------------------------
 expose :: TopLevel a => Form Text MusicBrainz a -> Handler Service Service ()
 expose f = do
-  parsedJson <- decode <$> readRequestBody (1024*1024)
+  modifyResponse (setContentType "application/json")
+  eitherT id id $ do
+    -- We need to ensure that a valid token can be found.
+    token <- EitherT $ note invalidToken . fmap Encoding.decodeUtf8 <$> getsRequest (getHeader "MB-Session")
 
-  case (parsedJson :: Maybe Value) of
-    Nothing -> do
-      -- The JSON the client submitted could not be parsed, so fail
-      modifyResponse (setResponseCode 400)
-      writeLBS . encode $ Map.fromList [("error"::Text, "Could not parse JSON"::Text)]
+    -- Some sort of token is present, decode the JSON before trying to get
+    -- a session lock.
+    json' <- EitherT $ note failedTeDecode . decode <$> readRequestBody (1024*1024)
 
-    Just json' -> do
-      -- We run the 'form' that validates the users submitted parameters to the
-      -- API call.
-
-      -- We run the 'form' that validates the users submitted parameters to the API
-      -- call.
-      Just token <- fmap (fmap Encoding.decodeUtf8) $ getsRequest (getHeader "MB-Session")
-      sessionStore <- gets openSessions
-      session <- liftIO $ atomically $ do
-        ss <- readTVar sessionStore
-        takeTMVar (ss Map.! token)
-
-      outcome <- liftIO (try (runMbContext (sessionContext session) (digestJSON f json')))
-
-      now <- liftIO getCurrentTime
+    -- Use that token to exclusively hold a session.
+    sessionStore <- lift $ gets openSessions
+    session <- EitherT $ note noSession <$> do
       liftIO $ atomically $ do
+        ss <- readTVar sessionStore
+        traverse takeTMVar $ Map.lookup token ss
+
+    -- We run the 'form' that validates the users submitted parameters to the API
+    -- call.
+    outcome <- liftIO (try (runMbContext (sessionContext session) (digestJSON f json')))
+
+    -- Release our lock on the session, and bump up the time it was last used.
+    liftIO $ do
+      now <- getCurrentTime
+      atomically $ do
         ss <- readTVar sessionStore
         putTMVar (ss Map.! token) session { lastUsed = now }
 
-      modifyResponse (setContentType "application/json")
-      case outcome of
-        Left (exception :: SomeException) -> do
-          -- There was indeed an exception, so lets render that back to the
-          -- client.
-          modifyResponse (setResponseCode 500)
-          writeLBS . encode $ object [ "error" .= show exception ]
+    case outcome of
+      Left (exception :: SomeException) -> do
+        -- There was indeed an exception, so lets render that back to the
+        -- client.
+        left (writeServerError $ T.pack $ show exception)
 
-        Right (view, ret') ->
-          case ret' of
-            Just success ->
-              -- All went smoothly, so just render back the API result.
-              writeLBS (encode success)
+      Right (view, ret) ->
+        hoistEither $ note (invalidParameters view) $ fmap (writeLBS . encode) ret
+  where
+    failedTeDecode = writeClientError "Could not parse JSON"
 
-            Nothing -> do
-              -- The client hasn't submitted valid parameters, so we'll render back
-              -- a list of all the parameters that failed validation.
-              modifyResponse (setResponseCode 400)
-              writeLBS (encode $ jsonErrors view)
+    invalidToken =
+      writeClientError "The MB-Session header was required but could not be parsed"
 
+    noSession =
+      writeClientError "No session could be found with the requested MB-Session token"
+
+    invalidParameters view = do
+      modifyResponse (setResponseCode 400)
+      writeLBS (encode $ jsonErrors view)
+
+    writeClientError = writeError 400
+    writeServerError = writeError 500
+
+    writeError status e = do
+      modifyResponse (setResponseCode status)
+      writeLBS . encode $ object [ "error" .= (e::Text) ]
 
 --------------------------------------------------------------------------------
 type SessionToken = Text
