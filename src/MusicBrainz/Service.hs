@@ -250,6 +250,7 @@ serviceInit connInfo sessionStore =
       , ("/release-group/create", expose ReleaseGroup.create)
       , ("/release-group/view-revision", expose ReleaseGroup.viewRevision)
 
+      , ("/url/create", expose Url.create)
       , ("/url/find-latest", expose Url.findLatest)
       , ("/url/view-revision", expose Url.viewRevision)
 
