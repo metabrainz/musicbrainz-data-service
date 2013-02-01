@@ -50,7 +50,7 @@ update = Update.update tree
 tree :: Form Text MusicBrainz (Tree Work)
 tree =
   WorkTree <$> "work" .: work
-           <*> pure mempty
+           <*> relationships
            <*> aliases
            <*> "annotation" .: (text Nothing)
            <*> (Set.fromList <$> "iswcs" .: listOf (const $ "iswc" .: iswcF) Nothing)

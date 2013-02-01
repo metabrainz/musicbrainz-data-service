@@ -1,6 +1,7 @@
 {-# LANGUAGE FlexibleContexts #-}
 {-# LANGUAGE NoMonomorphismRestriction #-}
 {-# LANGUAGE OverloadedStrings #-}
+{-# LANGUAGE TypeFamilies #-}
 module MusicBrainz.API
     ( -- * Parsers
       mbid
@@ -21,6 +22,7 @@ module MusicBrainz.API
 
       -- ** Tree data
     , aliases
+    , relationships
 
       -- * Running API Calls
     , runApi
@@ -33,6 +35,7 @@ import Control.Applicative
 import Control.Lens
 import Data.Monoid (mempty)
 import Data.Text (Text)
+import Data.Traversable (sequenceA)
 import Network.URI (parseURI)
 import Text.Digestive
 
@@ -252,3 +255,33 @@ aliases = Set.fromList <$> "aliases" .: listOf (const alias) Nothing
     locale = validate (\t -> if T.null t then Success Nothing else Success (Just t)) $
       text Nothing
     aliasTypeRef = optionalRef "Invalid alias type reference"
+
+
+--------------------------------------------------------------------------------
+relationships :: Form Text MusicBrainz (Set.Set LinkedRelationship)
+relationships =
+    Set.unions <$> "relationships" .: sequenceA [ ArtistRelationship `via` "artist"
+                                                , LabelRelationship `via` "label"
+                                                , RecordingRelationship `via` "recording"
+                                                , ReleaseRelationship `via` "release"
+                                                , ReleaseGroupRelationship `via` "release-group"
+                                                , UrlRelationship `via` "url"
+                                                , WorkRelationship `via` "work"
+                                                ]
+  where
+    f `via` key = Set.fromList <$> key .: listOf (const $ relationshipsOf f) Nothing
+
+    relationshipsOf f =
+      f <$> "target" .: coreRef
+        <*> (Relationship <$> "type" .: ref "Invalid relationship type"
+                          <*> pure mempty
+                          <*> pure emptyDate
+                          <*> pure emptyDate
+                          <*> pure False)
+
+    coreRef :: (RefSpec a ~ MBID a, ResolveReference a) => Form Text MusicBrainz (Ref a)
+    coreRef = validateM resolveMbid (string Nothing)
+
+    resolveMbid s = case s ^? MB.mbid of
+      Just mbid' -> maybe (Error "Could not resolve MBID") Success <$> resolveReference mbid'
+      Nothing -> pure $ Error "Could not parse MBID"
