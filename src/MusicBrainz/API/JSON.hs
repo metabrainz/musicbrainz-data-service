@@ -155,6 +155,12 @@ instance ToJSON ReleaseGroup where
 
 
 --------------------------------------------------------------------------------
+instance ToJSON (Revision a) where
+  toJSON r = object
+    [ "created-at" .= revisionCreatedAt r ]
+
+
+--------------------------------------------------------------------------------
 instance ToJSON URI where
   toJSON = toJSON . show
 

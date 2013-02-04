@@ -257,6 +257,7 @@ serviceInit connInfo sessionStore =
       , ("/work/create", expose Work.create)
       , ("/work/eligible-for-cleanup", expose Work.eligibleForCleanup)
       , ("/work/find-latest", expose Work.findLatest)
+      , ("/work/get-revision", expose Work.getRevision)
       , ("/work/merge", expose Work.merge)
       , ("/work/update", expose Work.update)
       , ("/work/view-aliases", expose Work.viewAliases)

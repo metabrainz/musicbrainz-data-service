@@ -10,6 +10,7 @@ module MusicBrainz.API.Work
     , eligibleForCleanup
     , viewRelationships
     , merge
+    , getRevision
     ) where
 
 import           Control.Applicative
@@ -100,3 +101,8 @@ merge = fmap RefObject $ runApi $
              <$> editor
              <*> "source" .: revisionRef
              <*> "target" .: coreRef)
+
+
+--------------------------------------------------------------------------------
+getRevision :: Form Text MusicBrainz (Entity (Revision Work))
+getRevision = runApi $ MB.getEntity <$> workRevision
