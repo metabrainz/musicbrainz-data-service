@@ -116,6 +116,7 @@ instance ToJSON LinkedRelationship where
         , "begin-date" .= relBeginDate rel
         , "end-date" .= relEndDate rel
         , "ended" .= relEnded rel
+        , "attributes" .= relAttributes rel
         ]
 
 
