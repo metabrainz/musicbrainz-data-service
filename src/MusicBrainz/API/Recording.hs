@@ -3,6 +3,7 @@
 module MusicBrainz.API.Recording where
 
 import           Control.Applicative
+import           Control.Lens
 import           Data.Text (Text)
 import           Text.Digestive
 
@@ -16,11 +17,18 @@ import qualified MusicBrainz.Data as MB
 
 --------------------------------------------------------------------------------
 tree :: Form Text MusicBrainz (Tree Recording)
-tree = RecordingTree <$> "recording" .: undefined
+tree = RecordingTree <$> "recording" .: recording
                      <*> relationships
                      <*> annotation
-                     <*> undefined
-                     <*> undefined
+                     <*> setOf isrcF
+                     <*> setOf puidF
+  where
+    recording = Recording <$> name
+                          <*> comment
+                          <*> artistCreditRef
+                          <*> duration
+    isrcF = validate (maybe (Error "Could not parse ISRC") Success . preview isrc) $ text Nothing
+    puidF = validate (maybe (Error "Could not parse PUID") Success . preview puid) $ string Nothing
 
 
 --------------------------------------------------------------------------------

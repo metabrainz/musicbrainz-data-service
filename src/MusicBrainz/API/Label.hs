@@ -29,7 +29,7 @@ tree :: Form Text MusicBrainz (Tree Label)
 tree = LabelTree <$> "label" .: label
                  <*> relationships
                  <*> aliases
-                 <*> undefined
+                 <*> ipiCodes
                  <*> annotation
 
 

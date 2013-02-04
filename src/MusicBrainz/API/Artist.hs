@@ -28,7 +28,7 @@ tree :: Form Text MusicBrainz (Tree Artist)
 tree = ArtistTree <$> "artist" .: artist
                   <*> relationships
                   <*> aliases
-                  <*> undefined
+                  <*> ipiCodes
                   <*> annotation
 
 

@@ -5,15 +5,19 @@
 module MusicBrainz.API
     ( -- * Parsers
       annotation
+    , comment
+    , duration
+    , ipiCodes
     , mbid
     , name
     , nonEmptyText
+    , partialDate
 
       -- ** Entity reference parsers
     , edit
     , editorRef
     , revision, revisionRef
-    , coreRef
+    , coreRef, optionalCoreRef
 
       -- ** Entities
     , artist
@@ -23,6 +27,7 @@ module MusicBrainz.API
     , work
 
       -- ** Tree data
+    , artistCreditRef
     , aliases
     , relationships
 
@@ -31,6 +36,10 @@ module MusicBrainz.API
 
       -- * Prelabelled fields
     , editor
+
+      -- * Combinators
+    , optionalRef
+    , setOf
     ) where
 
 import Control.Applicative
@@ -47,6 +56,7 @@ import qualified Data.Text as T
 
 import MusicBrainz hiding (mbid, labelCode, coreRef)
 import qualified MusicBrainz as MB
+import qualified MusicBrainz.Data.ArtistCredit as MB
 
 import MusicBrainz.Data
 
@@ -66,9 +76,12 @@ nonEmptyText =
 
 
 --------------------------------------------------------------------------------
-artistCreditRef :: Monad m => Form Text m (Ref ArtistCredit)
-artistCreditRef = validate (const $ Error "artistCreditRef cannot be implemented until digestive-functors #52 is fixed") $
-  text Nothing
+artistCreditRef :: Form Text MusicBrainz (Ref ArtistCredit)
+artistCreditRef = runApi $ MB.getRef <$> "artist-credits" .: listOf (const artistCredit) Nothing
+  where
+    artistCredit = ArtistCreditName <$> "artist" .: coreRef
+                                    <*> name
+                                    <*> "join-phrase" .: text Nothing
 
 
 --------------------------------------------------------------------------------
@@ -299,7 +312,34 @@ coreRef = validateM resolveMbid (string Nothing)
       Just mbid' -> maybe (Error "Could not resolve MBID") Success <$> resolveReference mbid'
       Nothing -> pure $ Error "Could not parse MBID"
 
+--------------------------------------------------------------------------------
+optionalCoreRef :: (RefSpec a ~ MBID a, ResolveReference a) => Form Text MusicBrainz (Maybe (Ref a))
+optionalCoreRef = validateM resolveMbid (string Nothing)
+  where
+    resolveMbid s
+      | null s = return $ Success Nothing
+      | otherwise = case s ^? MB.mbid of
+          Just mbid' -> maybe (Error "Could not resolve MBID") (Success . Just) <$> resolveReference mbid'
+          Nothing -> pure $ Error "Could not parse MBID"
+
 
 --------------------------------------------------------------------------------
 annotation :: Form Text MusicBrainz Text
 annotation = "annotation" .: (text Nothing)
+
+
+--------------------------------------------------------------------------------
+setOf :: (Monad m, Ord a) => Form Text m a -> Form Text m (Set.Set a)
+setOf f = Set.fromList <$> listOf (const f) Nothing
+
+
+--------------------------------------------------------------------------------
+duration :: Monad m => Form Text m (Maybe Int)
+duration = "duration" .: optionalStringRead "Could not read duration" Nothing
+
+
+--------------------------------------------------------------------------------
+ipiCodes :: Monad m => Form Text m (Set.Set IPI)
+ipiCodes = "ipi-codes" .: setOf ipiF
+  where
+    ipiF = validate (maybe (Error "Could not parse IPI") Success . preview ipi) $ text Nothing
