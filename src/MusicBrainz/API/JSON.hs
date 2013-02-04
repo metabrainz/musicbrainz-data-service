@@ -99,6 +99,27 @@ instance ToJSON Label where
 
 
 --------------------------------------------------------------------------------
+instance ToJSON LinkedRelationship where
+  toJSON r = case r of
+      ArtistRelationship target rel -> go "artist" target rel
+      LabelRelationship target rel -> go "label" target rel
+      RecordingRelationship target rel -> go "recording" target rel
+      ReleaseRelationship target rel -> go "release" target rel
+      ReleaseGroupRelationship target rel -> go "release-group" target rel
+      UrlRelationship target rel -> go "url" target rel
+      WorkRelationship target rel -> go "work" target rel
+    where
+      go t target rel = object
+        [ "target-type" .= (t :: Text)
+        , "target" .= target
+        , "type" .= relType rel
+        , "begin-date" .= relBeginDate rel
+        , "end-date" .= relEndDate rel
+        , "ended" .= relEnded rel
+        ]
+
+
+--------------------------------------------------------------------------------
 instance ToJSON Recording where
   toJSON Recording{..} = object [ "name" .= recordingName
                                 , "comment" .= recordingComment

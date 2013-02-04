@@ -8,6 +8,8 @@ module MusicBrainz.API.Work
     , viewAliases
     , viewAnnotation
     , eligibleForCleanup
+    , viewRelationships
+    , merge
     ) where
 
 import           Control.Applicative
@@ -18,12 +20,13 @@ import           Text.Digestive
 
 import qualified Data.Set as Set
 
-import           MusicBrainz
+import           MusicBrainz hiding (coreRef)
 import           MusicBrainz.API
 import qualified MusicBrainz.API.Create as Create
 import qualified MusicBrainz.API.FindLatest as FindLatest
 import qualified MusicBrainz.API.Update as Update
 import qualified MusicBrainz.Data as MB
+import qualified MusicBrainz.Data.Edit as MB
 import           MusicBrainz.API.JSON
 
 --------------------------------------------------------------------------------
@@ -81,3 +84,19 @@ eligibleForCleanup = fmap EligibleForCleanup $ runApi $
 --------------------------------------------------------------------------------
 workRevision :: Form Text MusicBrainz (Ref (Revision Work))
 workRevision = revision
+
+
+--------------------------------------------------------------------------------
+viewRelationships :: Form Text MusicBrainz (Set.Set LinkedRelationship)
+viewRelationships = runApi $ MB.viewRelationships <$> workRevision
+
+
+--------------------------------------------------------------------------------
+merge :: Form Text MusicBrainz (RefObject (Revision Work))
+merge = fmap RefObject $ runApi $
+    MB.withEdit
+      <$> edit
+      <*> (MB.merge
+             <$> editor
+             <*> "source" .: revisionRef
+             <*> "target" .: coreRef)

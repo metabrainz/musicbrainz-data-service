@@ -15,7 +15,7 @@ executable musicbrainz-data-service
     aeson-lens,
     base,
     configurator,
-    containers,
+    containers < 0.5,
     digestive-functors >= 0.6,
     digestive-functors-aeson >= 1.1,
     errors,

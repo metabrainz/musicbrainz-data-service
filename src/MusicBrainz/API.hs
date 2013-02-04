@@ -11,7 +11,8 @@ module MusicBrainz.API
       -- ** Entity reference parsers
     , edit
     , editorRef
-    , revision
+    , revision, revisionRef
+    , coreRef
 
       -- ** Entities
     , artist
@@ -43,7 +44,7 @@ import Data.Set ()
 import qualified Data.Set as Set
 import qualified Data.Text as T
 
-import MusicBrainz hiding (mbid, labelCode)
+import MusicBrainz hiding (mbid, labelCode, coreRef)
 import qualified MusicBrainz as MB
 
 import MusicBrainz.Data
@@ -241,6 +242,11 @@ revision = "revision" .: revisionRef
 
 
 --------------------------------------------------------------------------------
+revisionRef :: ResolveReference (Revision a) => Form Text MusicBrainz (Ref (Revision a))
+revisionRef = ref "Invalid revision reference"
+
+
+--------------------------------------------------------------------------------
 aliases :: ResolveReference (AliasType a) => Form Text MusicBrainz (Set.Set (Alias a))
 aliases = Set.fromList <$> "aliases" .: listOf (const alias) Nothing
   where
@@ -275,13 +281,16 @@ relationships =
       f <$> "target" .: coreRef
         <*> (Relationship <$> "type" .: ref "Invalid relationship type"
                           <*> pure mempty
-                          <*> pure emptyDate
-                          <*> pure emptyDate
+                          <*> beginDate
+                          <*> endDate
                           <*> pure False)
 
-    coreRef :: (RefSpec a ~ MBID a, ResolveReference a) => Form Text MusicBrainz (Ref a)
-    coreRef = validateM resolveMbid (string Nothing)
 
+--------------------------------------------------------------------------------
+coreRef :: (RefSpec a ~ MBID a, ResolveReference a) => Form Text MusicBrainz (Ref a)
+coreRef = validateM resolveMbid (string Nothing)
+  where
     resolveMbid s = case s ^? MB.mbid of
       Just mbid' -> maybe (Error "Could not resolve MBID") Success <$> resolveReference mbid'
       Nothing -> pure $ Error "Could not parse MBID"
+
