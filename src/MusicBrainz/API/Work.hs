@@ -1,17 +1,6 @@
 {-# LANGUAGE NoMonomorphismRestriction #-}
 {-# LANGUAGE OverloadedStrings #-}
-module MusicBrainz.API.Work
-    ( findLatest
-    , viewRevision
-    , create
-    , update
-    , viewAliases
-    , viewAnnotation
-    , eligibleForCleanup
-    , viewRelationships
-    , merge
-    , getRevision
-    ) where
+module MusicBrainz.API.Work where
 
 import           Control.Applicative
 import           Control.Lens
