@@ -280,10 +280,13 @@ relationships =
     relationshipsOf f =
       f <$> "target" .: coreRef
         <*> (Relationship <$> "type" .: ref "Invalid relationship type"
-                          <*> pure mempty
+                          <*> "attributes" .: attributes
                           <*> beginDate
                           <*> endDate
                           <*> pure False)
+
+    attributes =
+      Set.fromList <$> listOf (const (ref "Invalid relationship attribute type")) Nothing
 
 
 --------------------------------------------------------------------------------
