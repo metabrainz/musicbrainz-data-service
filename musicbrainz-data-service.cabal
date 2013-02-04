@@ -35,7 +35,7 @@ executable musicbrainz-data-service
     unordered-containers
   ghc-options: -Wall -fwarn-tabs -funbox-strict-fields -O2
                -fno-warn-orphans -fno-warn-unused-do-bind
-               -threaded -rtsopts
+               -threaded -rtsopts -Werror
 
 
 Test-Suite tests

@@ -240,8 +240,7 @@ edit = "edit" .: editRef
 
 --------------------------------------------------------------------------------
 revision :: ResolveReference (Revision a) => Form Text MusicBrainz (Ref (Revision a))
-revision = "revision" .: revisionRef
-  where revisionRef = ref "Invalid revision reference"
+revision = "revision" .: ref "Invalid revision reference"
 
 
 --------------------------------------------------------------------------------

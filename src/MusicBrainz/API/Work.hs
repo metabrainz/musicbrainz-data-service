@@ -15,7 +15,6 @@ module MusicBrainz.API.Work
 
 import           Control.Applicative
 import           Control.Lens
-import           Data.Monoid (mempty)
 import           Data.Text (Text)
 import           Text.Digestive
 
@@ -25,7 +24,6 @@ import           MusicBrainz hiding (coreRef)
 import           MusicBrainz.API
 import qualified MusicBrainz.API.Common as Common
 import qualified MusicBrainz.Data as MB
-import qualified MusicBrainz.Data.Edit as MB
 import           MusicBrainz.API.JSON
 
 --------------------------------------------------------------------------------

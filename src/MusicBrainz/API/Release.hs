@@ -13,7 +13,6 @@ import           MusicBrainz.API
 import qualified MusicBrainz.API.Common as Common
 import           MusicBrainz.API.JSON
 import qualified MusicBrainz.Data as MB
-import qualified MusicBrainz.Data.Edit as MB
 
 --------------------------------------------------------------------------------
 tree :: Form Text MusicBrainz (Tree Release)

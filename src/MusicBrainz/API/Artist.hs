@@ -13,7 +13,6 @@ import           MusicBrainz.API
 import qualified MusicBrainz.API.Common as Common
 import           MusicBrainz.API.JSON
 import qualified MusicBrainz.Data as MB
-import qualified MusicBrainz.Data.Edit as MB
 
 --------------------------------------------------------------------------------
 findLatest :: Form Text MusicBrainz (MaybeObject (CoreEntity Artist))

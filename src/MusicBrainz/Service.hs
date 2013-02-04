@@ -27,7 +27,7 @@ import           Data.Text (Text)
 import           Data.Time (UTCTime, getCurrentTime, diffUTCTime)
 import           Data.Traversable (traverse)
 import           Snap (Initializer, SnapletInit, makeSnaplet, Handler, getSnapletUserConfig, addRoutes)
-import           Snap.Core (writeLBS, setContentType, modifyResponse, setResponseCode, readRequestBody, getsRequest, getHeader)
+import           Snap.Core (MonadSnap, writeLBS, setContentType, modifyResponse, setResponseCode, readRequestBody, getsRequest, getHeader)
 import           Snap.Snaplet.Session.Common (mkCSRFToken, mkRNG, RNG)
 import           Text.Digestive (Form)
 import           Text.Digestive.Aeson (digestJSON, jsonErrors)
@@ -125,9 +125,13 @@ expose f = do
 
 
 --------------------------------------------------------------------------------
+writeClientError :: MonadSnap m => Text -> m ()
 writeClientError = writeError 400
+
+writeServerError :: MonadSnap m => Text -> m ()
 writeServerError = writeError 500
 
+writeError :: MonadSnap m => Int -> Text -> m ()
 writeError status e = do
    modifyResponse (setResponseCode status)
    writeLBS . encode $ object [ "error" .= (e::Text) ]
@@ -347,8 +351,8 @@ reaper sessionStore = forever $ do
     sessions <- readTVar sessionStore
     dead <- fmap catMaybes $ forM (Map.assocs sessions) $
       \(token, c) -> do
-        c <- tryReadTMVar c
-        case c of
+        c' <- tryReadTMVar c
+        case c' of
           Just inactiveSession ->
             return $
               if isStale inactiveSession

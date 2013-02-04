@@ -3,7 +3,6 @@
 module MusicBrainz.API.ReleaseGroup where
 
 import           Control.Applicative
-import           Data.Monoid (mempty)
 import           Data.Text (Text)
 import           Text.Digestive
 
@@ -15,7 +14,6 @@ import           MusicBrainz.API.JSON
 import qualified MusicBrainz.API.Common as Common
 
 import qualified MusicBrainz.Data as MB
-import qualified MusicBrainz.Data.Edit as MB
 
 --------------------------------------------------------------------------------
 tree :: Form Text MusicBrainz (Tree ReleaseGroup)
