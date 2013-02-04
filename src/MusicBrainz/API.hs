@@ -4,7 +4,8 @@
 {-# LANGUAGE TypeFamilies #-}
 module MusicBrainz.API
     ( -- * Parsers
-      mbid
+      annotation
+    , mbid
     , name
     , nonEmptyText
 
@@ -214,7 +215,9 @@ comment = "comment" .: text Nothing
 
 --------------------------------------------------------------------------------
 partialDate, beginDate, endDate :: Monad m => Form Text m PartialDate
-partialDate = pure emptyDate
+partialDate = PartialDate <$> "year" .: optionalStringRead "Could not read integer" Nothing
+                          <*> "month" .: optionalStringRead "Could not read integer" Nothing
+                          <*> "day" .: optionalStringRead "Could not read integer" Nothing
 beginDate = "begin-date" .: partialDate
 endDate = "end-date" .: partialDate
 
@@ -283,7 +286,7 @@ relationships =
                           <*> "attributes" .: attributes
                           <*> beginDate
                           <*> endDate
-                          <*> pure False)
+                          <*> ended)
 
     attributes =
       Set.fromList <$> listOf (const (ref "Invalid relationship attribute type")) Nothing
@@ -297,3 +300,7 @@ coreRef = validateM resolveMbid (string Nothing)
       Just mbid' -> maybe (Error "Could not resolve MBID") Success <$> resolveReference mbid'
       Nothing -> pure $ Error "Could not parse MBID"
 
+
+--------------------------------------------------------------------------------
+annotation :: Form Text MusicBrainz Text
+annotation = "annotation" .: (text Nothing)

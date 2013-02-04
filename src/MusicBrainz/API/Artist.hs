@@ -29,10 +29,10 @@ findLatest = FindLatest.findLatest
 create :: Form Text MusicBrainz (RefObject (Revision Artist))
 create = Create.create $
   ArtistTree <$> "artist" .: artist
-             <*> pure Set.empty
+             <*> relationships
              <*> aliases
              <*> pure Set.empty
-             <*> pure ""
+             <*> annotation
 
 
 --------------------------------------------------------------------------------

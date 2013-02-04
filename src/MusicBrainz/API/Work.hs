@@ -56,7 +56,7 @@ tree =
   WorkTree <$> "work" .: work
            <*> relationships
            <*> aliases
-           <*> "annotation" .: (text Nothing)
+           <*> annotation
            <*> (Set.fromList <$> "iswcs" .: listOf (const $ "iswc" .: iswcF) Nothing)
   where
     iswcF =

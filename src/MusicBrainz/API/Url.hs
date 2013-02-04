@@ -27,7 +27,7 @@ findLatest = FindLatest.findLatest
 --------------------------------------------------------------------------------
 create :: Form Text MusicBrainz (RefObject (Revision Url))
 create = Create.create $ (UrlTree <$> "url" .: url
-                                  <*> pure mempty)
+                                  <*> relationships)
 
 
 --------------------------------------------------------------------------------

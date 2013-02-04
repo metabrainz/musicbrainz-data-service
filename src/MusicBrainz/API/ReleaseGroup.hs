@@ -22,8 +22,8 @@ import qualified MusicBrainz.Data.Edit as MB
 create :: Form Text MusicBrainz (RefObject (Revision ReleaseGroup))
 create = Create.create $
   ReleaseGroupTree <$> "release_group" .: releaseGroup
-                   <*> pure mempty
-                   <*> pure ""
+                   <*> relationships
+                   <*> annotation
 
 
 --------------------------------------------------------------------------------
