@@ -177,8 +177,8 @@ openSession = do
 
 
 --------------------------------------------------------------------------------
-closeSession :: Handler Service Service ()
-closeSession = eitherT id (const $ return ()) $ do
+closeSessionWith :: MusicBrainz () -> Handler Service Service ()
+closeSessionWith f = eitherT id (const $ return ()) $ do
     token <- requestSession
     sessionStore <- lift $ gets openSessions
 
@@ -191,9 +191,19 @@ closeSession = eitherT id (const $ return ()) $ do
             Just <$> takeTMVar session
           Nothing -> return Nothing
 
-      forM_ context $ \c -> runMbContext (sessionContext c) (MusicBrainz.commit)
+      forM_ context $ \c -> runMbContext (sessionContext c) f
 
     lift $ writeLBS . encode $ object []
+
+
+--------------------------------------------------------------------------------
+closeSession :: Handler Service Service ()
+closeSession = closeSessionWith MusicBrainz.commit
+
+
+--------------------------------------------------------------------------------
+abortSession :: Handler Service Service ()
+abortSession = closeSessionWith MusicBrainz.rollback
 
 
 --------------------------------------------------------------------------------
@@ -226,6 +236,7 @@ serviceInit connInfo sessionStore =
   makeSnaplet "service" "musicbrainz-data HTTP service" Nothing $ do
     addRoutes
       [ ("/open-session", void openSession)
+      , ("/abort-session", abortSession)
       , ("/close-session", closeSession)
 
       , ("/artist/create", expose Artist.create)
