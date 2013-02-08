@@ -124,7 +124,7 @@ instance ToJSON LinkedRelationship where
 instance ToJSON Recording where
   toJSON Recording{..} = object [ "name" .= recordingName
                                 , "comment" .= recordingComment
-                                , "artist_credit" .= recordingArtistCredit
+                                , "artist-credit" .= recordingArtistCredit
                                 , "duration" .= recordingDuration
                                 ]
 
@@ -133,7 +133,7 @@ instance ToJSON Recording where
 instance ToJSON Release where
   toJSON Release{..} = object [ "name" .= releaseName
                               , "comment" .= releaseComment
-                              , "artist_credit" .= releaseArtistCredit
+                              , "artist-credit" .= releaseArtistCredit
                               , "duration" .= releaseReleaseGroup
                               , "date" .= releaseDate
                               , "country" .= releaseCountry
@@ -149,8 +149,8 @@ instance ToJSON ReleaseGroup where
   toJSON ReleaseGroup{..} = object
     [ "name" .= releaseGroupName
     , "comment" .= releaseGroupComment
-    , "primary_type" .= releaseGroupPrimaryType
-    , "artist_credit" .= releaseGroupArtistCredit
+    , "primary-type" .= releaseGroupPrimaryType
+    , "artist-credit" .= releaseGroupArtistCredit
     ]
 
 
