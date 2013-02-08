@@ -159,7 +159,7 @@ label = Label <$> name
 releaseGroup :: Form Text MusicBrainz ReleaseGroup
 releaseGroup = ReleaseGroup <$> name
                             <*> comment
-                            <*> "artist_credit" .: artistCreditRef
+                            <*> artistCreditRef
                             <*> "primary_type" .: releaseGroupTypeRef
                             <*> pure mempty  -- Require's #52 to be fixed
 
