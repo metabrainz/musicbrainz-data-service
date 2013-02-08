@@ -77,8 +77,10 @@ nonEmptyText =
 
 --------------------------------------------------------------------------------
 artistCreditRef :: Form Text MusicBrainz (Ref ArtistCredit)
-artistCreditRef = runApi $ MB.getRef <$> "artist-credits" .: listOf (const artistCredit) Nothing
+artistCreditRef = runApi $ MB.getRef <$> "artist-credits" .: artistCredits
   where
+    artistCredits = check "Expected multiple artist credits but saw none" ((> 0) . length) $
+      listOf (const artistCredit) Nothing
     artistCredit = ArtistCreditName <$> "artist" .: coreRef
                                     <*> name
                                     <*> "join-phrase" .: text Nothing
