@@ -17,9 +17,9 @@ import qualified MusicBrainz.Data as MB
 
 --------------------------------------------------------------------------------
 tree :: Form Text MusicBrainz (Tree ReleaseGroup)
-tree = ReleaseGroupTree <$> "release_group" .: releaseGroup
-                   <*> relationships
-                   <*> annotation
+tree = ReleaseGroupTree <$> "release-group" .: releaseGroup
+                        <*> relationships
+                        <*> annotation
 
 
 --------------------------------------------------------------------------------
