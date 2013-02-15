@@ -11,6 +11,16 @@ repository with the `--recursive` flag:
 
     git clone --recursive git://github.com/metabrainz/musicbrainz-data-service.git
 
+# Preliminary: Install `musicbrainz-data`
+
+Before you can build or install `musicbrainz-data-service`, you will need to
+install `musicbrainz-data`. To do so, run the following commands from inside
+your `musicbrainz-data-service` checkout:
+
+    cd musicbrainz-data
+    cabal install
+    cd ..
+
 # Installing
 
 `musicbrainz-data-service` is packaged using Cabal, and requires GHC 7.4 (or
@@ -24,15 +34,9 @@ You also need access to a PostgreSQL database server with the `cube` and
 `uuid-ossp` extensions, on Ubuntu 12.04 and 12.10 these extensions are in the
 postgresql-contrib-9.1 package.
 
-Before you can build `musicbrainz-data-service`, you will need to install
-`musicbrainz-data`. To do so, run the following commands from inside your
-`musicbrainz-data-service` checkout:
+Also, make sure you have installed `musicbrainz-data`, as mentioned above.
 
-    cd musicbrainz-data
-    cabal install
-    cd ..
-
-Once you have those requirements, you can now run:
+Once you have met those requirements, you can now run:
 
     cabal install
 
