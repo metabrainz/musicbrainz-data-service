@@ -11,13 +11,14 @@ repository with the `--recursive` flag:
 
     git clone --recursive git://github.com/metabrainz/musicbrainz-data-service.git
 
-# Preliminary: Install `musicbrainz-data`
+# Preliminary: Install dependencies
 
 Before you can build or install `musicbrainz-data-service`, you will need to
-install `musicbrainz-data`. To do so, run the following commands from inside
-your `musicbrainz-data-service` checkout:
+install dependencies. It's recommended to do this upfront, so you install
+dependencies for both `musicbrainz-data` *and* `musicbrainz-data-service` in one
+step.
 
-    cd musicbrainz-data
+    cd . ./musicbrainz-data
     cabal install
     cd ..
 
@@ -34,7 +35,12 @@ You also need access to a PostgreSQL database server with the `cube` and
 `uuid-ossp` extensions, on Ubuntu 12.04 and 12.10 these extensions are in the
 postgresql-contrib-9.1 package.
 
-Also, make sure you have installed `musicbrainz-data`, as mentioned above.
+You will also need to have `musicbrainz-data` installed. To install this, simply
+run:
+
+    cd musicbrainz-data
+    cabal install
+    cd ..
 
 Once you have met those requirements, you can now run:
 
@@ -105,3 +111,21 @@ running:
 
 Check the output of `cabal test --help` for various things that can also be done
 while you run tests.
+
+# Running the Service
+
+To run the service, you will need a `devel.cfg` file - this repository has an
+example in [devel.cfg.example](devel.cfg.example). This file should be placed in
+the working directory you plan to run the binary from.
+
+If you have installed `musicbrainz-data-service` with `cabal install` you can
+now simply run:
+
+    musicbrainz-data-service
+
+If you used `cabal build`, the binary will be in `dist/build`, so you run the
+service with:
+
+    ./dist/build/musicbrainz-data-service/musicbrainz-data-service
+
+Run the binary with `--help` to see supported command line options.

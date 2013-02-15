@@ -1,0 +1,8 @@
+# The PostgreSQL database to connect
+database = "musicbrainz"
+
+# The database user
+username = "musicbrainz"
+
+# The database password
+password = ""
