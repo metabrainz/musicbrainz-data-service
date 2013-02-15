@@ -42,7 +42,7 @@ Once you have those requirements, you can now run:
 
 To install just the dependencies needed to run `musicbrainz-data-service`, run:
 
-    cabal install --only-dependencies`
+    cabal install --only-dependencies
 
 If you plan to run tests, you will need to run:
 
