@@ -42,11 +42,11 @@ Once you have those requirements, you can now run:
 
 To install just the dependencies needed to run `musicbrainz-data-service`, run:
 
-`cabal install --only-dependencies`.
+    cabal install --only-dependencies`
 
 If you plan to run tests, you will need to run:
 
-`cabal install --enable-tests --only-dependencies`.
+    cabal install --enable-tests --only-dependencies
 
 ## Building
 
@@ -77,12 +77,12 @@ Your database is now ready to run the tests.
 We use Cabal to run tests. To build tests while you develop, enable test
 building when you configure musicbrainz-data:
 
-`cabal configure --enable-tests`
+    cabal configure --enable-tests
 
 Every time you run `cabal build` you will also build tests. You can run tests by
 running:
 
-`cabal test`
+    cabal test
 
 Check the output of `cabal test --help` for various things that can also be done
 while you run tests.
