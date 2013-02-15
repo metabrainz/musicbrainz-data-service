@@ -50,7 +50,22 @@ If you plan to run tests, you will need to run:
 
 ## Building
 
-To build, simply run `cabal build`.
+To build, you first need to configure the package. If you wish to simple build, use:
+
+    cabal configure
+
+Whereas if you also wish to run tests, use:
+
+    cabal configure --enable-tests
+
+You can now build the package with:
+
+    cabal build
+
+If you later change the `.cabal` file (for example, exporting more modules or
+adding dependencies) then Cabal should be clever enough to reconfigure with the
+same options for you. If you get stuck, you can use `cabal clean` and re-run
+these steps.
 
 ## Running tests
 
