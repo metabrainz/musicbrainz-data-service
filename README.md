@@ -18,9 +18,7 @@ install dependencies. It's recommended to do this upfront, so you install
 dependencies for both `musicbrainz-data` *and* `musicbrainz-data-service` in one
 step.
 
-    cd . ./musicbrainz-data
-    cabal install
-    cd ..
+    cabal install --only-dependencies . ./musicbrainz-data
 
 # Installing
 
@@ -38,9 +36,7 @@ postgresql-contrib-9.1 package.
 You will also need to have `musicbrainz-data` installed. To install this, simply
 run:
 
-    cd musicbrainz-data
-    cabal install
-    cd ..
+    cabal install ./musicbrainz-data
 
 Once you have met those requirements, you can now run:
 
