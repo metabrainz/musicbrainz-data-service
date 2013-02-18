@@ -3,6 +3,7 @@
 module MusicBrainz.API.Release where
 
 import           Control.Applicative
+import           Control.Lens
 import           Data.Text (Text)
 import           Text.Digestive
 
@@ -32,12 +33,20 @@ tree = ReleaseTree <$> "release" .: release
                       <*> "language" .: languageRef
                       <*> "packaging" .: releasePackagingRef
                       <*> "status" .: releaseStatusRef
+                      <*> "barcode" .: barcodeF
       where
         scriptRef = optionalRef "Invalid script reference"
         releaseStatusRef = optionalRef "Invalid release status reference"
         countryRef = optionalRef "Invalid country reference"
         releasePackagingRef = optionalRef "Invalid country reference"
         languageRef = optionalRef "Invalid country reference"
+        barcodeF = validate toBarcode $ (,) <$> "no-barcode" .: bool Nothing
+                                            <*> "barcode" .: string Nothing
+          where toBarcode (True, _) = Success (Just NoBarcode)
+                toBarcode (False, b) =
+                  maybe (Error "Invalid barcode")
+                        (Success . Just)
+                        (b ^? barcode)
 
     labels = "labels" .: setOf releaseLabel
       where

@@ -240,6 +240,7 @@ testReleaseFindLatest c = testCase "/find-latest" $ testMb c $ do
                                           , releaseStatus = Nothing
                                           , releasePackaging = Nothing
                                           , releaseReleaseGroup = coreRef rg
+                                          , releaseBarcode = Nothing
                                           }
                   , releaseAnnotation = mempty
                   , releaseLabels = mempty
