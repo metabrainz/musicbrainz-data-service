@@ -56,7 +56,7 @@ tree = ReleaseTree <$> "release" .: release
                           <*> "recording" .: coreRef
                           <*> duration
                           <*> artistCreditRef
-                          <*> "position" .: stringRead "Could not read track position" Nothing
+                          <*> "number" .: text Nothing
             cdtoc = CdToc <$> "track-offsets" .: listOf (stringRead "Could not read track offset") Nothing
                           <*> "leadout-offset" .: stringRead "Could not read leadout offset" Nothing
 
