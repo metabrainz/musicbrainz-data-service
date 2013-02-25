@@ -291,31 +291,6 @@ serviceInit connInfo sessionStore =
       , ("/release/view-relationships", expose Release.viewRelationships)
       , ("/release/view-revision", expose Release.viewRevision)
 
-
-      , ("/gender/add", expose Gender.add)
-
-      , ("/iswc/find-by-works", expose Iswc.findByWorks)
-
-      , ("/label/create", expose Label.create)
-      , ("/label/eligible-for-cleanup", expose Label.eligibleForCleanup)
-      , ("/label/find-latest", expose Label.findLatest)
-      , ("/label/get-revision", expose Label.getRevision)
-      , ("/label/merge", expose Label.merge)
-      , ("/label/update", expose Label.update)
-      , ("/label/view-aliases", expose Label.viewAliases)
-      , ("/label/view-annotation", expose Label.viewAnnotation)
-      , ("/label/view-relationships", expose Label.viewRelationships)
-      , ("/label/view-revision", expose Label.viewRevision)
-
-      , ("/recording/create", expose Recording.create)
-      , ("/recording/find-latest", expose Recording.findLatest)
-      , ("/recording/get-revision", expose Recording.getRevision)
-      , ("/recording/merge", expose Recording.merge)
-      , ("/recording/update", expose Recording.update)
-      , ("/recording/view-annotation", expose Recording.viewAnnotation)
-      , ("/recording/view-relationships", expose Recording.viewRelationships)
-      , ("/recording/view-revision", expose Recording.viewRevision)
-
       , ("/release-group/create", expose ReleaseGroup.create)
       , ("/release-group/find-latest", expose ReleaseGroup.findLatest)
       , ("/release-group/get-revision", expose ReleaseGroup.getRevision)
