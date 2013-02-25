@@ -11,7 +11,7 @@ module MusicBrainz.API.JSON
     , TopLevel
     ) where
 
-import Control.Lens (view, re)
+import Control.Lens hiding ((.=))
 import Data.Aeson
 import Data.Set (Set)
 import Data.Text (Text)
@@ -181,10 +181,11 @@ instance ToJSON Work where
 
 --------------------------------------------------------------------------------
 instance ToJSON PartialDate where
-  toJSON (PartialDate y m d) = object [ "year" .= y
-                                      , "month" .= m
-                                      , "day" .= d
-                                      ]
+  toJSON date = let (y, m, d) = date ^. re partialDate
+                in object [ "year" .= y
+                          , "month" .= m
+                          , "day" .= d
+                          ]
 
 
 --------------------------------------------------------------------------------
@@ -219,6 +220,11 @@ instance (ToJSON v, ToJSON (RefSpec k), Referenceable k) => ToJSON (Map.Map (Ref
 --------------------------------------------------------------------------------
 instance ToJSON ISWC where
   toJSON = toJSON . view (re iswc)
+
+
+--------------------------------------------------------------------------------
+instance ToJSON IPI where
+  toJSON = toJSON . view (re ipi)
 
 
 --------------------------------------------------------------------------------

@@ -9,7 +9,7 @@ import           Text.Digestive
 
 import qualified Data.Set as Set
 
-import           MusicBrainz hiding (coreRef, releaseLabel)
+import           MusicBrainz hiding (coreRef, releaseLabel, partialDate)
 import           MusicBrainz.API
 import qualified MusicBrainz.API.Common as Common
 import           MusicBrainz.API.JSON

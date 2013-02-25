@@ -54,7 +54,7 @@ import Data.Set ()
 import qualified Data.Set as Set
 import qualified Data.Text as T
 
-import MusicBrainz hiding (mbid, labelCode, coreRef)
+import MusicBrainz hiding (mbid, labelCode, coreRef, partialDate)
 import qualified MusicBrainz as MB
 import qualified MusicBrainz.Data.ArtistCredit as MB
 
@@ -230,9 +230,12 @@ comment = "comment" .: text Nothing
 
 --------------------------------------------------------------------------------
 partialDate, beginDate, endDate :: Monad m => Form Text m PartialDate
-partialDate = PartialDate <$> "year" .: optionalStringRead "Could not read integer" Nothing
-                          <*> "month" .: optionalStringRead "Could not read integer" Nothing
-                          <*> "day" .: optionalStringRead "Could not read integer" Nothing
+partialDate =
+  validate (maybe (Error "Invalid partial date") Success . preview MB.partialDate) $
+    (,,) <$> "year" .: optionalStringRead "Could not read integer" Nothing
+         <*> "month" .: optionalStringRead "Could not read integer" Nothing
+         <*> "day" .: optionalStringRead "Could not read integer" Nothing
+
 beginDate = "begin-date" .: partialDate
 endDate = "end-date" .: partialDate
 

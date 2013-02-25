@@ -39,6 +39,7 @@ import qualified MusicBrainz.API.Artist as Artist
 import qualified MusicBrainz.API.ArtistType as ArtistType
 import qualified MusicBrainz.API.Edit as Edit
 import qualified MusicBrainz.API.Gender as Gender
+import qualified MusicBrainz.API.Ipi as Ipi
 import qualified MusicBrainz.API.Iswc as Iswc
 import qualified MusicBrainz.API.Label as Label
 import qualified MusicBrainz.API.Recording as Recording
@@ -256,6 +257,8 @@ serviceInit connInfo sessionStore =
       , ("/edit/open", expose Edit.open)
 
       , ("/gender/add", expose Gender.add)
+
+      , ("/ipi/find-by-labels", expose Ipi.findByLabels)
 
       , ("/iswc/find-by-works", expose Iswc.findByWorks)
 
