@@ -45,6 +45,7 @@ Test-Suite tests
   hs-source-dirs:
     test/suite
     src
+    musicbrainz-data/test/framework
   build-depends:
     aeson,
     aeson-qq,
@@ -56,16 +57,20 @@ Test-Suite tests
     digestive-functors-aeson >= 1.1,
     errors,
     either,
+    HUnit,
     lens >= 3.8,
     MonadCatchIO-mtl >= 0.3.0.0 && <0.4,
     mtl >= 2.0.1.0 && < 2.2,
     musicbrainz-data,
     network >= 2.3.0.10,
+    postgresql-simple,
+    QuickCheck,
     snap,
     snap-core,
     stm >= 2.3,
     test-framework,
     test-framework-hunit,
+    test-framework-quickcheck2,
     text >= 0.11.1.13 && < 0.12,
     time >= 1.4,
     transformers >= 0.2.2.0 && < 0.4,

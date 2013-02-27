@@ -14,6 +14,13 @@ module MusicBrainz.API
     , partialDate
 
       -- ** Entity reference parsers
+    , artistTypeRef
+    , workTypeRef
+    , countryRef
+    , genderRef
+    , labelTypeRef
+    , languageRef
+    , releaseGroupTypeRef
     , edit
     , editorRef
     , ref
@@ -259,7 +266,7 @@ edit = "edit" .: editRef
 
 --------------------------------------------------------------------------------
 revision :: ResolveReference (Revision a) => Form Text MusicBrainz (Ref (Revision a))
-revision = "revision" .: ref "Invalid revision reference"
+revision = "revision" .: revisionRef
 
 
 --------------------------------------------------------------------------------
@@ -269,7 +276,7 @@ revisionRef = ref "Invalid revision reference"
 
 --------------------------------------------------------------------------------
 aliases :: ResolveReference (AliasType a) => Form Text MusicBrainz (Set.Set (Alias a))
-aliases = Set.fromList <$> "aliases" .: listOf (const alias) Nothing
+aliases = "aliases" .: setOf alias
   where
     alias = Alias <$> "name" .: nonEmptyText
                   <*> "sort-name" .: nonEmptyText
@@ -296,7 +303,7 @@ relationships =
                                                 , WorkRelationship `via` "work"
                                                 ]
   where
-    f `via` key = Set.fromList <$> key .: listOf (const $ relationshipsOf f) Nothing
+    f `via` key = key .: setOf (relationshipsOf f)
 
     relationshipsOf f =
       f <$> "target" .: coreRef
@@ -306,8 +313,7 @@ relationships =
                           <*> endDate
                           <*> ended)
 
-    attributes =
-      Set.fromList <$> listOf (const (ref "Invalid relationship attribute type")) Nothing
+    attributes = setOf (ref "Invalid relationship attribute type")
 
 
 --------------------------------------------------------------------------------

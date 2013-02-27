@@ -3,341 +3,563 @@
 {-# LANGUAGE QuasiQuotes #-}
 module Main (main) where
 
-import           Prelude hiding (init)
-import           Control.Applicative
-import           Control.Lens hiding (Context)
-import           Control.Monad (forM_)
-import           Control.Monad.Trans
-import           Data.Aeson (encode)
-import           Data.Aeson.QQ (aesonQQ)
-import qualified Data.ByteString as BS
-import qualified Data.ByteString.Lazy as LBS
-import           Data.Configurator (load, lookupDefault, Worth(..))
-import           Data.Maybe (fromJust)
-import           Data.Monoid (mempty)
-import           Data.Text (pack)
-import           Network.URI (parseURI)
-import           Snap.Snaplet (runSnaplet)
-import           Snap.Test hiding (buildRequest)
-import           Test.Framework (buildTest, defaultMain, testGroup, Test)
-import           Test.Framework.Providers.HUnit (testCase)
+import Control.Applicative
+import Control.Lens
+import Control.Monad.IO.Class (liftIO)
+import Data.Maybe (fromMaybe)
+import Data.Monoid (mempty)
+import Data.Text (Text)
+import Data.Text.Lens
+import MusicBrainz
+import Network.URI (parseURI)
+import Text.Digestive
 
-import qualified Data.Text.Encoding as Encoding
-import qualified Snap.Test as Snap
-import qualified Snap.Snaplet.Test as Snaplet
+import qualified Data.Map as Map
+import qualified Data.Set as Set
+import qualified Data.Text as Text
 
-import           MusicBrainz
-import           MusicBrainz.Edit
-import qualified MusicBrainz.Data as Data
-import           MusicBrainz.Data.ArtistCredit
-import qualified MusicBrainz.Data.Edit as Data
-import qualified MusicBrainz.Data.Editor as Editor
-import           MusicBrainz.Service (serviceInit, emptySessionStore, openSession)
+import qualified MusicBrainz.Data as MB
+import qualified MusicBrainz.Data.ArtistCredit as MB
+import qualified MusicBrainz.Data.Edit as MB
+import qualified MusicBrainz.Data.Editor as MB
+import qualified MusicBrainz.API as API
 
-import           Data.Aeson.Generic (toJSON)
-import           Data.Aeson.Types (object)
-import           Data.Aeson.Types (Value(..))
+import Test.MusicBrainz hiding (expectFailure)
+
+import MusicBrainz.Service
+
+main :: IO ()
+main = testRunner
+  [ testAnnotation
+  , testMbid
+  , testNonEmptyText
+  , testArtistCreditRef
+  , testArtistTypeRef
+  , testWorkTypeRef
+  , testCountryRef
+  , testEditorRef
+  , testGenderRef
+  , testLabelTypeRef
+  , testLanguageRef
+  , testReleaseGroupTypeRef
+  , testArtist
+  , testLabel
+  , testReleaseGroup
+  , testUrl
+  , testEdit
+  , testRevision
+  , testAliases
+  , testRelationships
+  , testOptionalCoreRef
+  , testDuration
+  , testIpiCodes
+  , testWork
+  ]
 
 --------------------------------------------------------------------------------
-main :: IO ()
-main = defaultMain [buildTest $ fmap (testGroup "All tests") tests]
+testAnnotation :: Test
+testAnnotation = testCase "annotation" $
+   testForm API.annotation
+     [ (["annotation"], expected) ]
+     expected
+ where expected = "My annotation here"
+
+
+
+--------------------------------------------------------------------------------
+testMbid :: Test
+testMbid = testGroup "mbid"
+  [ testCase "Successful parse" $
+      testMbid' "781db52b-8d7f-49cb-9df0-d4289b26e75d"
+  , testCase "Invalid parse" $
+      testMbid' "I like turtles"
+  ]
   where
-    tests = do
-      config <- load [Optional "autotest.cfg"]
+    testMbid' expected = do
+      (_, actual) <- mockPost API.mbid [(["mbid"], expected)]
+      actual @?= (expected ^? unpacked . mbid)
 
-      dbSettings <- ConnectInfo
-        <$> lookupDefault (connectHost defaultConnectInfo) config "host"
-        <*> lookupDefault (connectPort defaultConnectInfo) config "port"
-        <*> lookupDefault "musicbrainz" config "username"
-        <*> lookupDefault (connectPassword defaultConnectInfo) config "password"
-        <*> lookupDefault "musicbrainz_nes" config "database"
 
-      runMb dbSettings $
-        forM_
-          [ "SET client_min_messages TO warning"
-          , "TRUNCATE artist_type CASCADE"
-          , "TRUNCATE country CASCADE"
-          , "TRUNCATE editor CASCADE"
-          , "TRUNCATE gender CASCADE"
-          , "ALTER SEQUENCE revision_revision_id_seq RESTART 1"
-          ] $ \q -> execute q ()
+--------------------------------------------------------------------------------
+testNonEmptyText :: Test
+testNonEmptyText = testGroup "nonEmptyText"
+  [ testCase "Successful parse" $ do
+      let expected = "I like turtles"
+      testForm
+        ("t" .: API.nonEmptyText)
+        [(["t"], expected)]
+        expected
+  , testCase "Invalid parse" $
+      expectFailure ("t" .: API.nonEmptyText) [(["t"], "")]
+  ]
 
-      return [ testGroup "/artist"
-                 [ testArtistCreate dbSettings
-                 , testArtistFindLatest dbSettings
-                 ]
-             , testGroup "/artist-type"
-                 [ testAddArtistType dbSettings
-                 ]
-             , testGroup "/gender"
-                 [ testGenderAdd dbSettings
-                 ]
-             , testGroup "/label"
-                 [ testLabelCreate dbSettings
-                 , testLabelFindLatest dbSettings
-                 ]
-             , testGroup "/recording"
-                 [ testRecordingFindLatest dbSettings ]
-             , testGroup "/release"
-                 [ testReleaseFindLatest dbSettings ]
-             , testGroup "/url"
-                 [ testUrlFindLatest dbSettings ]
-             , testGroup "/work"
-                 [ testWorkFindLatest dbSettings ]
+
+--------------------------------------------------------------------------------
+testArtistCreditRef :: Test
+testArtistCreditRef = testGroup "artistCreditRef"
+    [ testCase "No artists is a failure" $ go []
+    , testCase "Successful with one artist" $ do
+        editor <- registerEditor
+        boc <- mkArtist editor "Boards of Canada"
+        go [ArtistCreditName boc "A name" ""]
+    , testCase "Successful with more than one artist" $ do
+        editor <- registerEditor
+        mefjus <- mkArtist editor "Mefjus"
+        mforce <- mkArtist editor "M-Force"
+        go [ ArtistCreditName mefjus "Mefjus" " & "
+           , ArtistCreditName mforce "M-Force" ""
+           ]
+    ]
+  where
+    go names
+      | null names = expectFailure API.artistCreditRef (mockAcFields names)
+      | otherwise  = do
+          acId <- success API.artistCreditRef (mockAcFields names)
+          actual <- expandCredit acId
+          actual @?= names
+
+
+--------------------------------------------------------------------------------
+testArtistTypeRef :: Test
+testArtistTypeRef = testCase "artistTypeRef" $
+  testOptionalAddParser
+    ("type" .: API.artistTypeRef)
+    "type"
+    (ArtistType { artistTypeName = "Person" })
+
+
+--------------------------------------------------------------------------------
+testWorkTypeRef :: Test
+testWorkTypeRef = testCase "workTypeRef" $
+  testOptionalAddParser
+    ("type" .: API.workTypeRef)
+    "type"
+    (WorkType { workTypeName = "Person" })
+
+
+--------------------------------------------------------------------------------
+testCountryRef :: Test
+testCountryRef = testCase "countryTypeRef" $
+  testOptionalAddParser
+    ("type" .: API.countryRef)
+    "type"
+    (Country { countryIsoCode = "UK", countryName = "UK" })
+
+
+--------------------------------------------------------------------------------
+testEditorRef :: Test
+testEditorRef = testCase "editorRef" $ do
+  ref <- entityRef <$> registerEditor
+  testForm
+    API.editor
+    [(["editor"], ref ^. to dereference . to show . packed)]
+    ref
+
+
+--------------------------------------------------------------------------------
+testEdit :: Test
+testEdit = testCase "edit" $ do
+  ref <- MB.openEdit
+  testForm
+    API.edit
+    [(["edit"], ref ^. to dereference . to show . packed)]
+    ref
+
+
+--------------------------------------------------------------------------------
+testRevision :: Test
+testRevision = testCase "revision" $ do
+  editor <- registerEditor
+  w <- autoEdit $ MB.create (entityRef editor)
+    WorkTree { workRelationships = mempty
+             , workAliases = mempty
+             , workAnnotation = ""
+             , workIswcs = mempty
+             ,  workData =
+                 Work { workName = "Katana"
+                      , workLanguage = Nothing
+                      , workType = Nothing
+                      , workComment = ""
+                      }
+             }
+
+  testForm
+    API.revision
+    [(["revision"], w ^. to dereference . to show . packed)]
+    w
+
+
+--------------------------------------------------------------------------------
+testGenderRef :: Test
+testGenderRef = testCase "genderTypeRef" $
+  testOptionalAddParser
+    ("type" .: API.genderRef)
+    "type"
+    (Gender { genderName = "Male" })
+
+
+--------------------------------------------------------------------------------
+testLabelTypeRef :: Test
+testLabelTypeRef = testCase "labelTypeTypeRef" $
+  testOptionalAddParser
+    ("type" .: API.labelTypeRef)
+    "type"
+    (LabelType { labelTypeName = "Original Production" })
+
+
+--------------------------------------------------------------------------------
+testLanguageRef :: Test
+testLanguageRef = testCase "languageTypeRef" $
+  testOptionalAddParser
+    ("type" .: API.languageRef)
+    "type"
+    (Language { languageName = "English"
+              , languageIsoCode2t = "en"
+              , languageIsoCode2b = "en"
+              , languageIsoCode1 = "en"
+              , languageIsoCode3 = "eng"
+              })
+
+
+--------------------------------------------------------------------------------
+testReleaseGroupTypeRef :: Test
+testReleaseGroupTypeRef = testGroup "releaseGroupTypeRef"
+  [ testCase "Primary" $
+      testOptionalAddParser
+        ("type" .: API.releaseGroupTypeRef)
+        "type"
+        (ReleaseGroupType { releaseGroupTypeName = "Single" } :: ReleaseGroupType Primary)
+  , testCase "Secondary" $
+      testOptionalAddParser
+        ("type" .: API.releaseGroupTypeRef)
+        "type"
+        (ReleaseGroupType { releaseGroupTypeName = "Remix" } :: ReleaseGroupType Secondary)
+  ]
+
+
+--------------------------------------------------------------------------------
+testArtist :: Test
+testArtist = testCase "artist" $
+  let expected = Artist { artistName = "DSP"
+                        , artistSortName = "DSP"
+                        , artistComment = ""
+                        , artistBeginDate = emptyDate
+                        , artistEndDate = emptyDate
+                        , artistGender = Nothing
+                        , artistType = Nothing
+                        , artistCountry = Nothing
+                        , artistEnded = False
+                        }
+  in testForm
+    API.artist
+    [ (["name"], artistName expected)
+    , (["sort-name"], artistSortName expected)
+    ]
+    expected
+
+
+--------------------------------------------------------------------------------
+testLabel :: Test
+testLabel = testCase "label" $
+  let expected = Label { labelName = "DSP"
+                       , labelSortName = "DSP"
+                       , labelComment = ""
+                       , labelBeginDate = emptyDate
+                       , labelEndDate = emptyDate
+                       , labelType = Nothing
+                       , labelCountry = Nothing
+                       , labelEnded = False
+                       , labelCode = Just 12345
+                       }
+  in testForm
+    API.label
+    [ (["name"], labelName expected)
+    , (["sort-name"], labelSortName expected)
+    , (["code"], maybe mempty (view packed . show) $ labelCode expected)
+    ]
+    expected
+
+
+--------------------------------------------------------------------------------
+testReleaseGroup :: Test
+testReleaseGroup = testCase "releaseGroup" $ do
+  editor <- registerEditor
+  earlGrey <- mkArtist editor "Earl Grey"
+
+  let name = "Subtle Audio, Volume II"
+  let comment = "Drum and bass"
+  let names = [ ArtistCreditName earlGrey "Earl Grey" "" ]
+  let primaryType = Nothing
+  let secondaryTypes = mempty
+
+  rg <- success
+    API.releaseGroup
+    ([ (["name"], name)
+     , (["comment"], comment)
+     ] ++ mockAcFields names)
+
+  releaseGroupName rg @?= name
+  releaseGroupComment rg @?= comment
+  releaseGroupPrimaryType rg @?= primaryType
+  releaseGroupSecondaryTypes rg @?= secondaryTypes
+
+  credits <- expandCredit (releaseGroupArtistCredit rg)
+  credits @?= names
+
+
+--------------------------------------------------------------------------------
+testUrl :: Test
+testUrl = testCase "url" $ do
+  let expected = Url { urlUrl = fromMaybe (error "Failed to parse URL") $
+                                  parseURI "http://musicbrainz.org/" }
+  testForm API.url [([], show (urlUrl expected) ^. packed)] expected
+
+
+--------------------------------------------------------------------------------
+testWork :: Test
+testWork = testCase "work" $ do
+  let expected = Work { workName = "From a Bar in an Airport"
+                      , workComment = ""
+                      , workLanguage = Nothing
+                      , workType = Nothing
+                      }
+  testForm API.work [ (["name"], workName expected)
+                    , (["comment"], workComment expected)
+                    ] expected
+
+--------------------------------------------------------------------------------
+testOptionalAddParser :: (MB.Add a, Referenceable a)
+                      => Form Text MusicBrainz (Maybe (Ref a))
+                      -> Text
+                      -> a
+                      -> MusicBrainz ()
+testOptionalAddParser form fieldName x = do
+  ref <- entityRef <$> MB.add x
+  testForm
+    form
+    [([fieldName], ref ^. to dereference . to show . packed)]
+    (Just ref)
+
+
+--------------------------------------------------------------------------------
+mockPost :: Form Text MusicBrainz a -> [([Text], Text)] -> MusicBrainz (View Text, Maybe a)
+mockPost form submissions = postForm "" form env
+  where
+    env p = return $ maybe [] (return . TextInput) $ lookup (drop 1 p) submissions
+
+
+--------------------------------------------------------------------------------
+success :: (Eq a, Show a) => Form Text MusicBrainz a -> [([Text], Text)] -> MusicBrainz a
+success form submissions = do
+  (v, actual) <- mockPost form submissions
+  return $ fromMaybe (error $ show v) actual
+
+
+--------------------------------------------------------------------------------
+expectFailure :: (Eq a, Show a) => Form Text MusicBrainz a -> [([Text], Text)] -> MusicBrainz ()
+expectFailure form submissions = do
+  (_, actual) <- mockPost form submissions
+  actual @?= Nothing
+
+
+--------------------------------------------------------------------------------
+testForm :: (Eq a, Show a) => Form Text MusicBrainz a -> [([Text], Text)] -> a -> MusicBrainz ()
+testForm form submissions expected = do
+  actual <- success form submissions
+  actual @?= expected
+
+
+--------------------------------------------------------------------------------
+testAliases :: Test
+testAliases = testCase "aliases" $
+    testForm API.aliases fields (Set.fromList expected)
+  where
+    expected =
+      [ Alias { aliasName = "RATM"
+              , aliasSortName = "RATM"
+              , aliasBeginDate = emptyDate
+              , aliasEndDate = emptyDate
+              , aliasType = Nothing
+              , aliasLocale = Nothing
+              , aliasPrimaryForLocale = False
+              , aliasEnded = False
+              } :: Alias Artist
+      ]
+    fields = concat
+      [ [ (["alias", "indices"], formatIndices expected) ]
+      , mkFields aliasField expected
+      ]
+    aliasField i alias =
+      [ (["aliases", i, "name"], aliasName alias)
+      , (["aliases", i, "sort-name"], aliasSortName alias)
+      ]
+
+
+--------------------------------------------------------------------------------
+testRelationships :: Test
+testRelationships = testCase "relationships" $ do
+    expected <- mkExpected
+    testForm API.relationships (fields expected) (Set.fromList expected)
+  where
+    fields expected =
+      concat [ [ (["relationships", "work", "indices"], formatIndices expected) ]
+             , map (\t -> (["relationships", t, "indices"], ""))
+                 [ "artist", "label", "release", "recording", "release-group", "url" ]
+             , mkFields relationshipField expected
              ]
 
+    relationshipField i (WorkRelationship target rel) =
+      [ (["relationships", "work", i, "target"], target ^. to dereference . re mbid . packed)
+      , (["relationships", "work", i, "type"], relType rel ^. to dereference . to show . packed)
+      , (["relationships", "work", i, "attributes", "indices"], formatIndices $ Set.toList $ relAttributes rel)
+      ]
 
---------------------------------------------------------------------------------
-type MusicBrainzTest = ConnectInfo -> Test
-
-
---------------------------------------------------------------------------------
-testArtistCreate :: MusicBrainzTest
-testArtistCreate c = testCase "/create" $ testMb c $ do
-    ocharles <- lift $ registerEditor
-    editId <- lift $ Data.openEdit
-    postJson "/artist/create" (testJson ocharles editId)
-  where
-    testJson editor editId = [aesonQQ| {
-        "artist": {
-          "name": "Massive Attack",
-          "sort-name": "Massive Attack"
-        },
-        "editor": <| dereference $ entityRef editor |>,
-        "edit": <| dereference editId |>
-      } |]
-
-
---------------------------------------------------------------------------------
-testArtistFindLatest :: MusicBrainzTest
-testArtistFindLatest c = testCase "/find-latest" $ testMb c $ do
-  artist <-  lift $ do
-    ocharles <- registerEditor
-    autoEdit $ Data.create (entityRef ocharles) massiveAttack >>= viewRevision
-  postJson "/artist/find-latest"
-    [aesonQQ|{ "mbid": <| dereference (coreRef artist) ^. re mbid |> }|]
-
-
---------------------------------------------------------------------------------
-testAddArtistType :: MusicBrainzTest
-testAddArtistType c = testCase "/add" $ testMb c $
-  postJson "/artist-type/add" [aesonQQ|{ "name": "Person" }|]
-
-
---------------------------------------------------------------------------------
-testGenderAdd :: MusicBrainzTest
-testGenderAdd c = testCase "/add" $ testMb c $
-  postJson "/gender/add" [aesonQQ|{ "name": "Female" }|]
-
-
---------------------------------------------------------------------------------
-testLabelCreate :: MusicBrainzTest
-testLabelCreate c = testCase "/create" $ testMb c $ do
-  ocharles <- lift $ registerEditor
-  editId <- lift $ Data.openEdit
-  postJson "/label/create" (testJson ocharles editId)
-  where
-    testJson editor editId = [aesonQQ| {
-        "label": {
-          "name": "Warp Records",
-          "sort-name": "Warp Records"
-        },
-        "editor": <| dereference $ entityRef editor |>,
-        "edit": <| dereference editId |>
-      } |]
-
-
---------------------------------------------------------------------------------
-testLabelFindLatest :: MusicBrainzTest
-testLabelFindLatest c = testCase "/find-latest" $ testMb c $ do
-  label <- lift $ do
-    ocharles <- registerEditor
-    autoEdit $ Data.create (entityRef ocharles) labelTree >>= viewRevision
-
-  postJson "/label/find-latest"
-    [aesonQQ|{ "mbid": <| dereference (coreRef label) ^. re mbid |> }|]
-  where
-    labelTree = LabelTree { labelData = Label { labelName = "Warp Records"
-                                              , labelSortName = "Warp Records"
-                                              , labelComment = ""
-                                              , labelBeginDate = emptyDate
-                                              , labelEndDate = emptyDate
-                                              , labelEnded = False
-                                              , labelCode = Nothing
-                                              , labelType = Nothing
-                                              , labelCountry = Nothing
-                                              }
-                            , labelAliases = mempty
-                            , labelIpiCodes = mempty
-                            , labelAnnotation = ""
-                            , labelRelationships = mempty
-                            }
-
-
---------------------------------------------------------------------------------
-testRecordingFindLatest :: MusicBrainzTest
-testRecordingFindLatest c = testCase "/find-latest" $ testMb c $ do
-  recording <- lift $ do
-    ocharles <- registerEditor
-    autoEdit $ do
-      artist <- Data.create (entityRef ocharles) massiveAttack >>= viewRevision
-      ac <- getRef [ArtistCreditName { acnArtist = coreRef artist
-                                     , acnName = "Massive Attack"
-                                     , acnJoinPhrase = mempty
-                                     } ]
-      Data.create (entityRef ocharles) (recordingTree ac) >>= viewRevision
-
-  postJson "/recording/find-latest"
-    [aesonQQ|{ "mbid": <| dereference (coreRef recording) ^. re mbid |> }|]
-  where
-    recordingTree ac =
-      RecordingTree { recordingData = Recording { recordingName = "Warp Records"
-                                                , recordingComment = ""
-                                                , recordingArtistCredit = ac
-                                                , recordingDuration = Nothing
-                                                }
-                    , recordingAnnotation = mempty
-                    , recordingIsrcs = mempty
-                    , recordingPuids = mempty
-                    , recordingRelationships = mempty
-                    }
-
-
---------------------------------------------------------------------------------
-testReleaseFindLatest :: MusicBrainzTest
-testReleaseFindLatest c = testCase "/find-latest" $ testMb c $ do
-  release <- lift $ do
-    ocharles <- registerEditor
-    autoEdit $ do
-      artist <- Data.create (entityRef ocharles) massiveAttack >>= viewRevision
-      ac <- getRef [ArtistCreditName { acnArtist = coreRef artist
-                                     , acnName = "Massive Attack"
-                                     , acnJoinPhrase = mempty
-                                     } ]
-      rg <- Data.create (entityRef ocharles) (dummyRg ac) >>= viewRevision
-      Data.create (entityRef ocharles) (releaseTree ac rg) >>= viewRevision
-  postJson "/release/find-latest"
-    [aesonQQ|{ "mbid": <| dereference (coreRef release) ^. re mbid |> }|]
-  where
-    dummyRg ac = ReleaseGroupTree { releaseGroupData = ReleaseGroup { releaseGroupName = "Dummy"
-                                                                    , releaseGroupArtistCredit = ac
-                                                                    , releaseGroupComment = ""
-                                                                    , releaseGroupPrimaryType = Nothing
-                                                                    , releaseGroupSecondaryTypes = mempty
-                                                                    }
-                                  , releaseGroupAnnotation = mempty
-                                  , releaseGroupRelationships = mempty
-                                  }
-
-    releaseTree ac rg =
-      ReleaseTree { releaseData = Release { releaseName = "Warp Records"
-                                          , releaseComment = mempty
-                                          , releaseArtistCredit = ac
-                                          , releaseLanguage = Nothing
-                                          , releaseDate = emptyDate
-                                          , releaseCountry = Nothing
-                                          , releaseScript = Nothing
-                                          , releaseStatus = Nothing
-                                          , releasePackaging = Nothing
-                                          , releaseReleaseGroup = coreRef rg
-                                          , releaseBarcode = Nothing
-                                          }
-                  , releaseAnnotation = mempty
-                  , releaseLabels = mempty
-                  , releaseMediums = mempty
-                  , releaseRelationships = mempty
-                  }
-
-
---------------------------------------------------------------------------------
-testUrlFindLatest :: MusicBrainzTest
-testUrlFindLatest c = testCase "/find-latest" $ testMb c $ do
-  url <- lift $ do
-    ocharles <- registerEditor
-    autoEdit $ Data.create (entityRef ocharles) urlTree >>= viewRevision
-  postJson "/url/find-latest"
-    [aesonQQ|{ "mbid": <| dereference (coreRef url) ^. re mbid |> }|]
-  where
-    urlTree = UrlTree { urlData = Url { urlUrl = fromJust (parseURI "http://musicbrainz.org/") }
-                      , urlRelationships = mempty
-                      }
-
-
---------------------------------------------------------------------------------
-testWorkFindLatest :: MusicBrainzTest
-testWorkFindLatest c = testCase "/find-latest" $ testMb c $ do
-  work <- lift $ do
-    ocharles <- registerEditor
-    autoEdit $ Data.create (entityRef ocharles) workTree >>= viewRevision
-  postJson "/work/find-latest"
-    [aesonQQ|{ "mbid": <| dereference (coreRef work) ^. re mbid |> }|]
-  where
-    workTree = WorkTree { workData = Work { workName = "To a Wild Rose"
-                                          , workComment = ""
-                                          , workLanguage = Nothing
-                                          , workType = Nothing
-                                          }
-                        , workAliases = mempty
-                        , workAnnotation = mempty
-                        , workIswcs = mempty
-                        , workRelationships = mempty
-                        }
-
-
---------------------------------------------------------------------------------
-postJson :: MonadIO m => BS.ByteString -> Value -> RequestBuilder m ()
-postJson endPoint = postRaw endPoint "application/json" . toStrict . encode
-
-
---------------------------------------------------------------------------------
-toStrict :: LBS.ByteString -> BS.ByteString
-toStrict = BS.concat . LBS.toChunks
-
-
---------------------------------------------------------------------------------
-autoEdit :: EditM a -> MusicBrainz a
-autoEdit action = do
-  editId <- Data.openEdit
-  Data.withEdit editId action <* Data.apply editId
-
-
---------------------------------------------------------------------------------
-massiveAttack :: Tree Artist
-massiveAttack = ArtistTree { artistData = Artist { artistName = "Massive Attack"
-                                                 , artistSortName = "Massive Attack"
-                                                 , artistComment = ""
-                                                 , artistBeginDate = emptyDate
-                                                 , artistEndDate = emptyDate
-                                                 , artistEnded = False
-                                                 , artistGender = Nothing
-                                                 , artistType = Nothing
-                                                 , artistCountry = Nothing
-                                                 }
-                           , artistRelationships = mempty
-                           , artistAliases = mempty
-                           , artistIpiCodes = mempty
-                           , artistAnnotation = ""
+    mkWork editor name = fmap coreRef $
+      MB.create (entityRef editor)
+        (WorkTree { workRelationships = mempty
+                  , workAliases = mempty
+                  , workAnnotation = ""
+                  , workIswcs = mempty
+                  ,  workData =
+                      Work { workName = name
+                           , workLanguage = Nothing
+                           , workType = Nothing
+                           , workComment = ""
                            }
+                  }) >>= MB.viewRevision
+
+    mkExpected = do
+      editor <- registerEditor
+      (katana, brother) <- autoEdit $
+        (,) <$> mkWork editor "Katana"
+            <*> mkWork editor "Brother: The Point (2562 remix)"
+
+      relType <- entityRef <$> MB.add
+        RelationshipType { relName = "R"
+                         , relTypeAttributes = mempty
+                         , relParent = Nothing
+                         , relChildOrder = 1
+                         , relLeftTarget = ToArtist
+                         , relRightTarget = ToWork
+                         , relDescription = ""
+                         , relLinkPhrase = ""
+                         , relReverseLinkPhrase = ""
+                         , relShortLinkPhrase = ""
+                         , relPriority = 0
+                         }
+
+      return
+        [ WorkRelationship brother
+            Relationship { relType = relType
+                         , relBeginDate = emptyDate
+                         , relAttributes = mempty
+                         , relEndDate = emptyDate
+                         , relEnded = False
+                         }
+        , WorkRelationship katana
+            Relationship { relType = relType
+                         , relBeginDate = emptyDate
+                         , relAttributes = mempty
+                         , relEndDate = emptyDate
+                         , relEnded = False
+                         }
+        ]
+
+
+--------------------------------------------------------------------------------
+testOptionalCoreRef :: Test
+testOptionalCoreRef = testGroup "optionalCoreRef"
+    [ testCase "Missing" $ testForm form [] Nothing
+    , testCase "Present & invalid" $
+        expectFailure form [ ([], "Mmm, waffles") ]
+    ]
+  where
+    form :: Form Text MusicBrainz (Maybe (Ref Work))
+    form = API.optionalCoreRef
+
+
+--------------------------------------------------------------------------------
+testDuration :: Test
+testDuration = testGroup "duration"
+  [ testCase "Valid" $
+      testForm API.duration [(["duration"], "74947")] (Just 74947)
+  , testCase "Missing" $
+      testForm API.duration [] Nothing
+  , testCase "Invalid" $
+      expectFailure API.duration [(["duration"], "One minute and ten seconds")]
+  ]
+
+
+--------------------------------------------------------------------------------
+testIpiCodes :: Test
+testIpiCodes = testGroup "ipiCodes"
+  [ testCase "None" $ testForm API.ipiCodes [(["ipi-codes", "indices"], "")] mempty
+  , testCase "One" $ do
+      let expected = "00244121213" ^?! ipi
+      testForm
+        API.ipiCodes
+        [ (["ipi-codes", "indices"], "0")
+        , (["ipi-codes", "0"], expected ^. re ipi)
+        ]
+        (Set.singleton expected)
+  , testCase "Invalid" $
+      expectFailure API.ipiCodes
+        [ (["ipi-codes", "indices"], "0")
+        , (["ipi-codes", "0"], "Madonna")
+        ]
+  ]
+
 
 --------------------------------------------------------------------------------
 registerEditor :: MusicBrainz (Entity Editor)
-registerEditor = Editor.register (Editor "ocharles" "password")
+registerEditor = MB.register (Editor "ocharles" "password")
 
 
 --------------------------------------------------------------------------------
-testMb :: ConnectInfo -> RequestBuilder MusicBrainz () -> IO ()
-testMb connInfo buildRequest = do
-    sessions <- emptySessionStore
-    Right (token, context) <- Snaplet.evalHandler (return ()) openSession (init sessions)
+mkArtist :: Entity Editor -> Text -> MusicBrainz (Ref Artist)
+mkArtist editor name = fmap coreRef $ autoEdit $
+  MB.create (entityRef editor)
+    (ArtistTree { artistData = Artist { artistName = name
+                                      , artistSortName = name
+                                      , artistComment = ""
+                                      , artistBeginDate = emptyDate
+                                      , artistEndDate = emptyDate
+                                      , artistEnded = False
+                                      , artistGender = Nothing
+                                      , artistType = Nothing
+                                      , artistCountry = Nothing
+                                      }
+                , artistRelationships = mempty
+                , artistAliases = mempty
+                , artistIpiCodes = mempty
+                , artistAnnotation = ""
+                }) >>= MB.viewRevision
 
-    let addMbSessionHeader = addHeader "MB-Session" (Encoding.encodeUtf8 token)
 
-    (_, service, _) <- runSnaplet (Just "autotest") (init sessions)
-    runMbContext context $ do
-      res <- Snap.runHandler (buildRequest >> addMbSessionHeader)
-               service
-      liftIO (assertSuccess res)
-      rollback
-
+--------------------------------------------------------------------------------
+mockAcFields :: [ArtistCreditName] -> [([Text], Text)]
+mockAcFields names =
+    concat [ [( ["artist-credits", "indices"] , formatIndices names) ]
+           , mkFields artistCreditField names
+           ]
   where
-    init sessions = serviceInit (return connInfo) (return sessions)
+    artistCreditField i (ArtistCreditName artist name joinPhrase) =
+      [ (["artist-credits", i, "artist"], (dereference artist) ^. re mbid . packed)
+      , (["artist-credits", i, "name"], name)
+      , (["artist-credits", i, "join-phrase"], joinPhrase)
+      ]
+
+
+--------------------------------------------------------------------------------
+formatIndices :: [a] -> Text
+formatIndices x = Text.intercalate "," $ [0..pred $ length x] ^.. traverse.to show.packed
+
+
+--------------------------------------------------------------------------------
+expandCredit :: Ref ArtistCredit -> MusicBrainz [ArtistCreditName]
+expandCredit acId = (Map.! acId) <$> MB.expandCredits (Set.singleton acId)
+
+
+--------------------------------------------------------------------------------
+mkFields :: (Text -> a -> [([Text], Text)]) -> [a] -> [([Text], Text)]
+mkFields f x = concat $ zipWith f (map (view packed . show) [0..]) x

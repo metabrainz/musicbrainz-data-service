@@ -29,7 +29,7 @@ tree = ReleaseTree <$> "release" .: release
                       <*> artistCreditRef
                       <*> "release-group" .: coreRef
                       <*> "date" .: partialDate
-                      <*> "country" .: countryRef
+                      <*> "ccountry" .: countryRef
                       <*> "script" .: scriptRef
                       <*> "language" .: languageRef
                       <*> "packaging" .: releasePackagingRef
@@ -38,9 +38,7 @@ tree = ReleaseTree <$> "release" .: release
       where
         scriptRef = optionalRef "Invalid script reference"
         releaseStatusRef = optionalRef "Invalid release status reference"
-        countryRef = optionalRef "Invalid country reference"
         releasePackagingRef = optionalRef "Invalid country reference"
-        languageRef = optionalRef "Invalid country reference"
         barcodeF = validate toBarcode $ (,) <$> "no-barcode" .: bool Nothing
                                             <*> "barcode" .: string Nothing
           where toBarcode (True, _) = Success (Just NoBarcode)
