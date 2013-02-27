@@ -36,6 +36,7 @@ import qualified Data.Map as Map
 import qualified Data.Text as T
 import qualified Data.Text.Encoding as Encoding
 import qualified MusicBrainz.API.Artist as Artist
+import qualified MusicBrainz.API.ArtistCredit as ArtistCredit
 import qualified MusicBrainz.API.ArtistType as ArtistType
 import qualified MusicBrainz.API.Edit as Edit
 import qualified MusicBrainz.API.Gender as Gender
@@ -251,6 +252,8 @@ serviceInit connInfo sessionStore =
       , ("/artist/view-relationships", expose Artist.viewRelationships)
       , ("/artist/view-revision", expose Artist.viewRevision)
 
+      , ("/artist-credit/expand", expose ArtistCredit.expandCredits)
+
       , ("/artist-type/add", expose ArtistType.add)
 
       , ("/edit/add-note", expose Edit.addEditNote)
@@ -283,6 +286,7 @@ serviceInit connInfo sessionStore =
       , ("/recording/view-revision", expose Recording.viewRevision)
 
       , ("/release/create", expose Release.create)
+      , ("/release/find-by-label", expose Release.findByLabel)
       , ("/release/find-latest", expose Release.findLatest)
       , ("/release/get-revision", expose Release.getRevision)
       , ("/release/merge", expose Release.merge)

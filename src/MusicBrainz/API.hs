@@ -16,6 +16,7 @@ module MusicBrainz.API
       -- ** Entity reference parsers
     , edit
     , editorRef
+    , ref
     , revision, revisionRef
     , coreRef, optionalCoreRef
 

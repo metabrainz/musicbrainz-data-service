@@ -14,6 +14,7 @@ import           MusicBrainz.API
 import qualified MusicBrainz.API.Common as Common
 import           MusicBrainz.API.JSON
 import qualified MusicBrainz.Data as MB
+import qualified MusicBrainz.Data.Release as MB
 
 --------------------------------------------------------------------------------
 tree :: Form Text MusicBrainz (Tree Release)
@@ -114,3 +115,8 @@ getRevision = Common.getRevision
 --------------------------------------------------------------------------------
 create :: Form Text MusicBrainz (RefObject (Revision Release))
 create = Common.create tree
+
+
+--------------------------------------------------------------------------------
+findByLabel :: Form Text MusicBrainz [CoreEntity Release]
+findByLabel = runApi $ MB.findByLabel <$> "label" .: coreRef

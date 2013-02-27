@@ -70,6 +70,14 @@ instance ToJSON Artist where
 
 
 --------------------------------------------------------------------------------
+instance ToJSON ArtistCreditName where
+  toJSON ArtistCreditName{..} = object [ "artist" .= acnArtist
+                                       , "name" .= acnName
+                                       , "join-phrase" .= acnJoinPhrase
+                                       ]
+
+
+--------------------------------------------------------------------------------
 instance ToJSON ArtistType where
   toJSON ArtistType{..} = object [ "name" .= artistTypeName ]
 
@@ -247,9 +255,10 @@ class ToJSON a => TopLevel a
 instance (Referenceable a, ToJSON (RefSpec a)) => TopLevel (RefObject a)
 instance (ToJSON (RefSpec a), ToJSON a, Referenceable a) => TopLevel (CoreEntity a)
 instance (ToJSON (RefSpec a), ToJSON a, Referenceable a) => TopLevel (Entity a)
-instance (ToJSON v) => TopLevel (Set v)
 instance (ToJSON v, ToJSON (RefSpec k), Referenceable k) => TopLevel (Map.Map (Ref k) v)
 instance ToJSON a => TopLevel (MaybeObject a)
+instance ToJSON a => TopLevel (Set a)
 instance TopLevel ()
 instance TopLevel Annotation
 instance TopLevel EligibleForCleanup
+instance TopLevel a => TopLevel [a]
