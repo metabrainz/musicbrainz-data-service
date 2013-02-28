@@ -149,8 +149,13 @@ instance ToJSON Release where
                               , "language" .= releaseLanguage
                               , "packaging" .= releasePackaging
                               , "status" .= releaseStatus
+                              , "barcode" .= releaseBarcode
                               ]
 
+
+--------------------------------------------------------------------------------
+instance ToJSON Barcode where
+  toJSON = toJSON . review barcode
 
 --------------------------------------------------------------------------------
 instance ToJSON ReleaseGroup where
