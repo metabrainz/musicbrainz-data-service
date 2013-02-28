@@ -8,12 +8,13 @@ import           Text.Digestive
 
 import qualified Data.Set as Set
 
-import           MusicBrainz
+import           MusicBrainz hiding (coreRef)
 import           MusicBrainz.API
 import           MusicBrainz.API.JSON
 import qualified MusicBrainz.API.Common as Common
 
 import qualified MusicBrainz.Data as MB
+import qualified MusicBrainz.Data.ReleaseGroup as MB
 
 --------------------------------------------------------------------------------
 tree :: Form Text MusicBrainz (Tree ReleaseGroup)
@@ -66,3 +67,8 @@ getRevision = Common.getRevision
 --------------------------------------------------------------------------------
 findLatest :: Form Text MusicBrainz (MaybeObject (CoreEntity ReleaseGroup))
 findLatest = Common.findLatest
+
+
+--------------------------------------------------------------------------------
+findByArtist :: Form Text MusicBrainz [CoreEntity ReleaseGroup]
+findByArtist = runApi $ MB.findByArtist <$> "artist" .: coreRef

@@ -297,6 +297,7 @@ serviceInit connInfo sessionStore =
       , ("/release/view-revision", expose Release.viewRevision)
 
       , ("/release-group/create", expose ReleaseGroup.create)
+      , ("/release-group/find-by-artist", expose ReleaseGroup.findByArtist)
       , ("/release-group/find-latest", expose ReleaseGroup.findLatest)
       , ("/release-group/get-revision", expose ReleaseGroup.getRevision)
       , ("/release-group/merge", expose ReleaseGroup.merge)
