@@ -82,6 +82,19 @@ instance ToJSON ArtistType where
   toJSON ArtistType{..} = object [ "name" .= artistTypeName ]
 
 
+
+--------------------------------------------------------------------------------
+instance ToJSON Barcode where
+  toJSON = toJSON . review barcode
+
+
+--------------------------------------------------------------------------------
+instance ToJSON CdToc where
+  toJSON CdToc{..} = object [ "leadout-offset" .= cdTocLeadoutOffset
+                            , "track-offsets" .= cdTocTrackOffsets
+                            ]
+
+
 --------------------------------------------------------------------------------
 instance ToJSON Editor where
   toJSON Editor{..} = object [ "name" .= editorName
@@ -129,6 +142,16 @@ instance ToJSON LinkedRelationship where
 
 
 --------------------------------------------------------------------------------
+instance ToJSON Medium where
+  toJSON Medium{..} = object [ "name" .= mediumName
+                             , "format" .= mediumFormat
+                             , "position" .= mediumPosition
+                             , "tracks" .= mediumTracks
+                             , "cdtocs" .= mediumCdTocs
+                             ]
+
+
+--------------------------------------------------------------------------------
 instance ToJSON Recording where
   toJSON Recording{..} = object [ "name" .= recordingName
                                 , "comment" .= recordingComment
@@ -154,10 +177,6 @@ instance ToJSON Release where
 
 
 --------------------------------------------------------------------------------
-instance ToJSON Barcode where
-  toJSON = toJSON . review barcode
-
---------------------------------------------------------------------------------
 instance ToJSON ReleaseGroup where
   toJSON ReleaseGroup{..} = object
     [ "name" .= releaseGroupName
@@ -178,6 +197,16 @@ instance ToJSON ReleaseLabel where
 instance ToJSON (Revision a) where
   toJSON r = object
     [ "created-at" .= revisionCreatedAt r ]
+
+
+--------------------------------------------------------------------------------
+instance ToJSON Track where
+  toJSON Track{..} = object [ "name" .= trackName
+                            , "recording" .= trackRecording
+                            , "duration" .= trackDuration
+                            , "artist-credit" .= trackArtistCredit
+                            , "number" .= trackPosition
+                            ]
 
 
 --------------------------------------------------------------------------------

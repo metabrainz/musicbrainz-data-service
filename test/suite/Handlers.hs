@@ -63,6 +63,7 @@ tests = map testHandlerExists
   , "/release/merge"
   , "/release/update"
   , "/release/view-annotation"
+  , "/release/view-mediums"
   , "/release/view-relationships"
   , "/release/view-release-labels"
   , "/release/view-revision"
@@ -106,7 +107,8 @@ testHandlerExists path = testCase (Text.unpack $ (Encoding.decodeUtf8 path) `Tex
                   (return testSessionStore)
 
   response <- runHandler (postRaw path "application/json" mempty) s
-  assertBool "Response code is not 5xx" $ rspStatus response < 500
+  assertBool "Response code is >= 500" $ rspStatus response < 500
+  assertBool "Response code is 404" $ rspStatus response /= 404
 
   liftIO tearDown
 

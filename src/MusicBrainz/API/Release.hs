@@ -124,3 +124,8 @@ findByLabel = runApi $ MB.findByLabel <$> "label" .: coreRef
 --------------------------------------------------------------------------------
 viewReleaseLabels :: Form Text MusicBrainz (Map.Map (Ref (Revision Release)) (Set.Set ReleaseLabel))
 viewReleaseLabels = runApi $ MB.viewReleaseLabels <$> setOf revisionRef
+
+
+--------------------------------------------------------------------------------
+viewMediums :: Form Text MusicBrainz (Map.Map (Ref (Revision Release)) [Medium])
+viewMediums = runApi $ MB.viewMediums <$> setOf revisionRef
