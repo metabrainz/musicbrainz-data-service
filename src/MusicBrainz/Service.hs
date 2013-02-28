@@ -40,7 +40,6 @@ import qualified MusicBrainz.API.ArtistCredit as ArtistCredit
 import qualified MusicBrainz.API.ArtistType as ArtistType
 import qualified MusicBrainz.API.Edit as Edit
 import qualified MusicBrainz.API.Gender as Gender
-import qualified MusicBrainz.API.Ipi as Ipi
 import qualified MusicBrainz.API.Iswc as Iswc
 import qualified MusicBrainz.API.Label as Label
 import qualified MusicBrainz.API.Recording as Recording
@@ -249,6 +248,7 @@ serviceInit connInfo sessionStore =
       , ("/artist/update", expose Artist.update)
       , ("/artist/view-aliases", expose Artist.viewAliases)
       , ("/artist/view-annotation", expose Artist.viewAnnotation)
+      , ("/artist/view-ipi-codes", expose Artist.viewIpiCodes)
       , ("/artist/view-relationships", expose Artist.viewRelationships)
       , ("/artist/view-revision", expose Artist.viewRevision)
 
@@ -261,8 +261,6 @@ serviceInit connInfo sessionStore =
 
       , ("/gender/add", expose Gender.add)
 
-      , ("/ipi/find-by-labels", expose Ipi.findByLabels)
-
       , ("/iswc/find-by-works", expose Iswc.findByWorks)
 
       , ("/label/create", expose Label.create)
@@ -273,6 +271,7 @@ serviceInit connInfo sessionStore =
       , ("/label/update", expose Label.update)
       , ("/label/view-aliases", expose Label.viewAliases)
       , ("/label/view-annotation", expose Label.viewAnnotation)
+      , ("/label/view-ipi-codes", expose Label.viewIpiCodes)
       , ("/label/view-relationships", expose Label.viewRelationships)
       , ("/label/view-revision", expose Label.viewRevision)
 

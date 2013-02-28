@@ -11,6 +11,7 @@ module MusicBrainz.API.Common
     , update
     , viewAliases
     , viewAnnotation
+    , viewIpiCodes
     , viewRelationships
     ) where
 
@@ -21,6 +22,7 @@ import Data.Traversable (traverse)
 import Data.Text (Text)
 import Text.Digestive
 
+import qualified Data.Map as Map
 import qualified Data.Set as Set
 
 import MusicBrainz hiding (coreRef, mbid)
@@ -103,3 +105,10 @@ viewAnnotation revision' = fmap Annotation $ runApi $ MB.viewAnnotation <$> revi
 --------------------------------------------------------------------------------
 viewAliases :: (MB.ResolveReference (Revision a), MB.ViewAliases a) => Form Text MusicBrainz (Set.Set (Alias a))
 viewAliases = runApi $ MB.viewAliases <$> revision
+
+
+--------------------------------------------------------------------------------
+viewIpiCodes :: (MB.ResolveReference (Revision a), MB.ViewIPICodes a)
+  => Form Text MusicBrainz (Map.Map (Ref (Revision a)) (Set.Set IPI))
+viewIpiCodes = runApi $
+  MB.viewIpiCodes <$> (Set.fromList <$> "revisions" .: listOf (const revision) Nothing)

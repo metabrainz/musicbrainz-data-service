@@ -6,6 +6,7 @@ import           Control.Applicative
 import           Data.Text (Text)
 import           Text.Digestive
 
+import qualified Data.Map as Map
 import qualified Data.Set as Set
 
 import           MusicBrainz
@@ -76,3 +77,8 @@ update = Common.update tree
 --------------------------------------------------------------------------------
 getRevision :: Form Text MusicBrainz (Entity (Revision Artist))
 getRevision = Common.getRevision
+
+
+--------------------------------------------------------------------------------
+viewIpiCodes :: Form Text MusicBrainz (Map.Map (Ref (Revision Artist)) (Set.Set IPI))
+viewIpiCodes = Common.viewIpiCodes

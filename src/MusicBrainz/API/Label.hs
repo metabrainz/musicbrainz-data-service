@@ -5,6 +5,7 @@ import           Control.Applicative
 import           Data.Text (Text)
 import           Text.Digestive
 
+import qualified Data.Map as Map
 import qualified Data.Set as Set
 
 import           MusicBrainz
@@ -77,3 +78,8 @@ eligibleForCleanup = Common.eligibleForCleanup labelRevision
 --------------------------------------------------------------------------------
 viewAliases :: Form Text MusicBrainz (Set.Set (Alias Label))
 viewAliases = Common.viewAliases
+
+
+--------------------------------------------------------------------------------
+viewIpiCodes :: Form Text MusicBrainz (Map.Map (Ref (Revision Label)) (Set.Set IPI))
+viewIpiCodes = Common.viewIpiCodes
