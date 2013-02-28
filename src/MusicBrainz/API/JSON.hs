@@ -183,6 +183,7 @@ instance ToJSON ReleaseGroup where
     , "comment" .= releaseGroupComment
     , "primary-type" .= releaseGroupPrimaryType
     , "artist-credit" .= releaseGroupArtistCredit
+    , "secondary-types" .= releaseGroupSecondaryTypes
     ]
 
 
