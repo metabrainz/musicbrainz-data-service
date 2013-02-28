@@ -285,6 +285,7 @@ serviceInit connInfo sessionStore =
       , ("/recording/view-revision", expose Recording.viewRevision)
 
       , ("/release/create", expose Release.create)
+      , ("/release/find-by-release-group", expose Release.findByReleaseGroup)
       , ("/release/find-by-label", expose Release.findByLabel)
       , ("/release/find-latest", expose Release.findLatest)
       , ("/release/get-revision", expose Release.getRevision)

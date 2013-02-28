@@ -129,3 +129,8 @@ viewReleaseLabels = runApi $ MB.viewReleaseLabels <$> setOf revisionRef
 --------------------------------------------------------------------------------
 viewMediums :: Form Text MusicBrainz (Map.Map (Ref (Revision Release)) [Medium])
 viewMediums = runApi $ MB.viewMediums <$> setOf revisionRef
+
+
+--------------------------------------------------------------------------------
+findByReleaseGroup :: Form Text MusicBrainz [CoreEntity Release]
+findByReleaseGroup = runApi $ MB.findByReleaseGroup <$> "release-group" .: coreRef

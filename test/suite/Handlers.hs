@@ -59,6 +59,7 @@ tests = map testHandlerExists
   , "/recording/view-revision"
   , "/release/create"
   , "/release/find-by-label"
+  , "/release/find-by-release-group"
   , "/release/find-latest"
   , "/release/get-revision"
   , "/release/merge"
