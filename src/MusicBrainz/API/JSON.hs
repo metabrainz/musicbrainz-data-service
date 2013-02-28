@@ -163,6 +163,13 @@ instance ToJSON ReleaseGroup where
 
 
 --------------------------------------------------------------------------------
+instance ToJSON ReleaseLabel where
+  toJSON ReleaseLabel{..} = object [ "label" .= releaseLabel
+                                   , "catalog-number" .= releaseCatalogNumber
+                                   ]
+
+
+--------------------------------------------------------------------------------
 instance ToJSON (Revision a) where
   toJSON r = object
     [ "created-at" .= revisionCreatedAt r ]

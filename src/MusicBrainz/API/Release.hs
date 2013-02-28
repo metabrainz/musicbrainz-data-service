@@ -7,6 +7,7 @@ import           Control.Lens
 import           Data.Text (Text)
 import           Text.Digestive
 
+import qualified Data.Map as Map
 import qualified Data.Set as Set
 
 import           MusicBrainz hiding (coreRef, releaseLabel, partialDate)
@@ -118,3 +119,8 @@ create = Common.create tree
 --------------------------------------------------------------------------------
 findByLabel :: Form Text MusicBrainz [CoreEntity Release]
 findByLabel = runApi $ MB.findByLabel <$> "label" .: coreRef
+
+
+--------------------------------------------------------------------------------
+viewReleaseLabels :: Form Text MusicBrainz (Map.Map (Ref (Revision Release)) (Set.Set ReleaseLabel))
+viewReleaseLabels = runApi $ MB.viewReleaseLabels <$> setOf revisionRef

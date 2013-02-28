@@ -64,6 +64,7 @@ tests = map testHandlerExists
   , "/release/update"
   , "/release/view-annotation"
   , "/release/view-relationships"
+  , "/release/view-release-labels"
   , "/release/view-revision"
   , "/release-group/create"
   , "/release-group/find-latest"

@@ -292,6 +292,7 @@ serviceInit connInfo sessionStore =
       , ("/release/merge", expose Release.merge)
       , ("/release/update", expose Release.update)
       , ("/release/view-annotation", expose Release.viewAnnotation)
+      , ("/release/view-release-labels", expose Release.viewReleaseLabels)
       , ("/release/view-relationships", expose Release.viewRelationships)
       , ("/release/view-revision", expose Release.viewRevision)
 
