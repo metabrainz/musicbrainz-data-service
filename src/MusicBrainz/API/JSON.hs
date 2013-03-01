@@ -165,7 +165,7 @@ instance ToJSON Release where
   toJSON Release{..} = object [ "name" .= releaseName
                               , "comment" .= releaseComment
                               , "artist-credit" .= releaseArtistCredit
-                              , "duration" .= releaseReleaseGroup
+                              , "release-group" .= releaseReleaseGroup
                               , "date" .= releaseDate
                               , "country" .= releaseCountry
                               , "script" .= releaseScript
