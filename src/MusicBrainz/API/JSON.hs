@@ -204,7 +204,7 @@ instance ToJSON (Revision a) where
 instance ToJSON Track where
   toJSON Track{..} = object [ "name" .= trackName
                             , "recording" .= trackRecording
-                            , "duration" .= trackDuration
+                            , "length" .= trackDuration
                             , "artist-credit" .= trackArtistCredit
                             , "number" .= trackPosition
                             ]
