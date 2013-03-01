@@ -71,7 +71,7 @@ tree = ReleaseTree <$> "release" .: release
 
 
 --------------------------------------------------------------------------------
-findLatest :: Form Text MusicBrainz (MaybeObject (CoreEntity Release))
+findLatest :: Form Text MusicBrainz (Map.Map (Ref Release) (CoreEntity Release))
 findLatest = Common.findLatest
 
 

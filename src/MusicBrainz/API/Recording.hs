@@ -7,6 +7,7 @@ import           Control.Lens
 import           Data.Text (Text)
 import           Text.Digestive
 
+import qualified Data.Map as Map
 import qualified Data.Set as Set
 
 import           MusicBrainz
@@ -37,7 +38,7 @@ create = Common.create tree
 
 
 --------------------------------------------------------------------------------
-findLatest :: Form Text MusicBrainz (MaybeObject (CoreEntity Recording))
+findLatest :: Form Text MusicBrainz (Map.Map (Ref Recording) (CoreEntity Recording))
 findLatest = Common.findLatest
 
 

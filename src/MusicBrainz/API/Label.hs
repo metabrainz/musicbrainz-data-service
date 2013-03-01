@@ -16,7 +16,7 @@ import qualified MusicBrainz.Data as MB
 import           MusicBrainz.Data.Label ()
 
 --------------------------------------------------------------------------------
-findLatest :: Form Text MusicBrainz (MaybeObject (CoreEntity Label))
+findLatest :: Form Text MusicBrainz (Map.Map (Ref Label) (CoreEntity Label))
 findLatest = Common.findLatest
 
 

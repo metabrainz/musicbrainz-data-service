@@ -6,6 +6,7 @@ import           Control.Applicative
 import           Data.Text (Text)
 import           Text.Digestive
 
+import qualified Data.Map as Map
 import qualified Data.Set as Set
 
 import           MusicBrainz
@@ -21,7 +22,7 @@ tree = UrlTree <$> "url" .: url
 
 
 --------------------------------------------------------------------------------
-findLatest :: Form Text MusicBrainz (MaybeObject (CoreEntity Url))
+findLatest :: Form Text MusicBrainz (Map.Map (Ref Url) (CoreEntity Url))
 findLatest = Common.findLatest
 
 

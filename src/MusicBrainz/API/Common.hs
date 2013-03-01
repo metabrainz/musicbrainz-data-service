@@ -18,7 +18,6 @@ module MusicBrainz.API.Common
 import Prelude hiding (lookup)
 
 import Control.Applicative
-import Data.Traversable (traverse)
 import Data.Text (Text)
 import Text.Digestive
 
@@ -49,11 +48,8 @@ create tree =
 
 --------------------------------------------------------------------------------
 findLatest :: (RefSpec a ~ MBID a, MB.FindLatest a, MB.ResolveReference a, MB.Merge a)
-  => MBForm (MaybeObject (CoreEntity a))
-findLatest = validateM lookup mbid
-  where
-    lookup mbid' =
-      (Success . MaybeObject) <$> (MB.resolveReference mbid' >>= traverse MB.findLatest)
+  => MBForm (Map.Map (Ref a) (CoreEntity a))
+findLatest = runApi $ MB.findLatest <$> setOf coreRef
 
 
 --------------------------------------------------------------------------------

@@ -6,6 +6,7 @@ import           Control.Applicative
 import           Data.Text (Text)
 import           Text.Digestive
 
+import qualified Data.Map as Map
 import qualified Data.Set as Set
 
 import           MusicBrainz hiding (coreRef)
@@ -65,7 +66,7 @@ getRevision = Common.getRevision
 
 
 --------------------------------------------------------------------------------
-findLatest :: Form Text MusicBrainz (MaybeObject (CoreEntity ReleaseGroup))
+findLatest :: Form Text MusicBrainz (Map.Map (Ref ReleaseGroup) (CoreEntity ReleaseGroup))
 findLatest = Common.findLatest
 
 

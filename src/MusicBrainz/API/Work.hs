@@ -7,6 +7,7 @@ import           Control.Lens
 import           Data.Text (Text)
 import           Text.Digestive
 
+import qualified Data.Map as Map
 import qualified Data.Set as Set
 
 import           MusicBrainz hiding (coreRef)
@@ -16,7 +17,7 @@ import qualified MusicBrainz.Data as MB
 import           MusicBrainz.API.JSON
 
 --------------------------------------------------------------------------------
-findLatest :: Form Text MusicBrainz (MaybeObject (CoreEntity Work))
+findLatest :: Form Text MusicBrainz (Map.Map (Ref Work) (CoreEntity Work))
 findLatest = Common.findLatest
 
 

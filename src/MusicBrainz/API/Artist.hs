@@ -16,7 +16,7 @@ import           MusicBrainz.API.JSON
 import qualified MusicBrainz.Data as MB
 
 --------------------------------------------------------------------------------
-findLatest :: Form Text MusicBrainz (MaybeObject (CoreEntity Artist))
+findLatest :: Form Text MusicBrainz (Map.Map (Ref Artist) (CoreEntity Artist))
 findLatest = Common.findLatest
 
 
