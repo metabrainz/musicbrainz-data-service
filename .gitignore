@@ -13,3 +13,4 @@ cabal-dev
 /*.html
 /test.cfg
 /test/suite/Tests
+/log

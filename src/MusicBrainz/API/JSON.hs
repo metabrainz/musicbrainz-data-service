@@ -22,6 +22,7 @@ import qualified Data.Map as Map
 import qualified Data.Text as Text
 
 import MusicBrainz
+import MusicBrainz.Data.Recording (RecordingUse(..))
 
 --------------------------------------------------------------------------------
 instance ToJSON (MBID a) where
@@ -239,6 +240,13 @@ instance ToJSON PartialDate where
 
 
 --------------------------------------------------------------------------------
+instance ToJSON RecordingUse where
+  toJSON RecordingUse{..} = object [ "track" .= recordingTrack
+                                   , "release" .= recordingTrackRelease
+                                   ]
+
+
+--------------------------------------------------------------------------------
 instance (Referenceable a, ToJSON (RefSpec a)) => ToJSON (Ref a) where
   toJSON = toJSON . dereference
 
@@ -304,3 +312,4 @@ instance TopLevel ()
 instance TopLevel Annotation
 instance TopLevel EligibleForCleanup
 instance TopLevel a => TopLevel [a]
+instance TopLevel RecordingUse

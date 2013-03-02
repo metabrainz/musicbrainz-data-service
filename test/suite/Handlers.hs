@@ -51,6 +51,7 @@ tests = map testHandlerExists
   , "/label/view-revision"
   , "/recording/create"
   , "/recording/find-latest"
+  , "/recording/find-recording-tracks"
   , "/recording/get-revision"
   , "/recording/merge"
   , "/recording/update"

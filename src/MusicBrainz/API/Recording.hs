@@ -10,11 +10,12 @@ import           Text.Digestive
 import qualified Data.Map as Map
 import qualified Data.Set as Set
 
-import           MusicBrainz
+import           MusicBrainz hiding (coreRef)
 import           MusicBrainz.API
 import qualified MusicBrainz.API.Common as Common
 import           MusicBrainz.API.JSON
 import qualified MusicBrainz.Data as MB
+import qualified MusicBrainz.Data.Recording as MB
 
 --------------------------------------------------------------------------------
 tree :: Form Text MusicBrainz (Tree Recording)
@@ -76,3 +77,8 @@ merge = Common.merge
 --------------------------------------------------------------------------------
 getRevision :: Form Text MusicBrainz (Entity (Revision Recording))
 getRevision = Common.getRevision
+
+
+--------------------------------------------------------------------------------
+findRecordingTracks :: Form Text MusicBrainz [MB.RecordingUse]
+findRecordingTracks = runApi $ MB.findRecordingTracks <$> "recording" .: coreRef
