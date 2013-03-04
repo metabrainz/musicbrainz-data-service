@@ -243,6 +243,7 @@ instance ToJSON PartialDate where
 instance ToJSON RecordingUse where
   toJSON RecordingUse{..} = object [ "track" .= recordingTrack
                                    , "release" .= recordingTrackRelease
+                                   , "total-tracks" .= recordingMediumTrackCount
                                    ]
 
 
