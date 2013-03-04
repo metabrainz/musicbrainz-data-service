@@ -252,6 +252,7 @@ serviceInit connInfo sessionStore =
       , ("/artist/view-relationships", expose Artist.viewRelationships)
       , ("/artist/view-revision", expose Artist.viewRevision)
 
+      , ("/artist-credit/all-artist-credits", expose ArtistCredit.allCredits)
       , ("/artist-credit/expand", expose ArtistCredit.expandCredits)
 
       , ("/artist-type/add", expose ArtistType.add)

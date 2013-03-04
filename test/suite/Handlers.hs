@@ -32,6 +32,7 @@ tests = map testHandlerExists
   , "/artist/view-ipi-codes"
   , "/artist/view-relationships"
   , "/artist/view-revision"
+  , "/artist-credit/all-artist-credits"
   , "/artist-credit/expand"
   , "/artist-type/add"
   , "/edit/add-note"

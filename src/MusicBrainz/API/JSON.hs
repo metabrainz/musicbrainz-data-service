@@ -5,6 +5,7 @@
 {-# LANGUAGE OverloadedStrings #-}
 module MusicBrainz.API.JSON
     ( Annotation(..)
+    , ArtistCredit(..)
     , MaybeObject(..)
     , RefObject(..)
     , EligibleForCleanup(..)
@@ -21,7 +22,7 @@ import qualified Data.HashMap.Strict as HMap
 import qualified Data.Map as Map
 import qualified Data.Text as Text
 
-import MusicBrainz
+import MusicBrainz hiding (ArtistCredit)
 import MusicBrainz.Data.Recording (RecordingUse(..))
 
 --------------------------------------------------------------------------------
@@ -306,6 +307,13 @@ instance ToJSON EligibleForCleanup where
 
 
 --------------------------------------------------------------------------------
+newtype ArtistCredit = ArtistCredit [ArtistCreditName]
+
+instance ToJSON ArtistCredit where
+  toJSON (ArtistCredit names) = toJSON names
+
+
+--------------------------------------------------------------------------------
 class ToJSON a => TopLevel a
 
 instance (Referenceable a, ToJSON (RefSpec a)) => TopLevel (RefObject a)
@@ -319,3 +327,4 @@ instance TopLevel Annotation
 instance TopLevel EligibleForCleanup
 instance TopLevel a => TopLevel [a]
 instance TopLevel RecordingUse
+instance TopLevel ArtistCredit
