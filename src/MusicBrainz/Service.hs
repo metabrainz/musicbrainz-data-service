@@ -277,12 +277,14 @@ serviceInit connInfo sessionStore =
 
       , ("/recording/create", expose Recording.create)
       , ("/recording/find-by-artist", expose Recording.findByArtist)
+      , ("/recording/find-by-isrc", expose Recording.findByIsrc)
       , ("/recording/find-latest", expose Recording.findLatest)
       , ("/recording/find-recording-tracks", expose Recording.findRecordingTracks)
       , ("/recording/get-revision", expose Recording.getRevision)
       , ("/recording/merge", expose Recording.merge)
       , ("/recording/update", expose Recording.update)
       , ("/recording/view-annotation", expose Recording.viewAnnotation)
+      , ("/recording/view-isrcs", expose Recording.viewIsrcs)
       , ("/recording/view-relationships", expose Recording.viewRelationships)
       , ("/recording/view-revision", expose Recording.viewRevision)
 

@@ -29,7 +29,6 @@ tree = RecordingTree <$> "recording" .: recording
                           <*> comment
                           <*> artistCreditRef
                           <*> duration
-    isrcF = validate (maybe (Error "Could not parse ISRC") Success . preview isrc) $ text Nothing
     puidF = validate (maybe (Error "Could not parse PUID") Success . preview puid) $ string Nothing
 
 
@@ -87,3 +86,19 @@ findRecordingTracks = runApi $ MB.findRecordingTracks <$> "recording" .: coreRef
 --------------------------------------------------------------------------------
 findByArtist :: Form Text MusicBrainz [CoreEntity Recording]
 findByArtist = runApi $ MB.findByArtist <$> "artist" .: coreRef
+
+
+--------------------------------------------------------------------------------
+findByIsrc :: Form Text MusicBrainz [CoreEntity Recording]
+findByIsrc = runApi $ MB.findByIsrc <$> "isrc" .: isrcF
+
+
+--------------------------------------------------------------------------------
+viewIsrcs :: Form Text MusicBrainz (Set.Set ISRC)
+viewIsrcs = runApi $ MB.viewIsrcs <$> recordingRevision
+
+
+--------------------------------------------------------------------------------
+isrcF :: Monad m => Form Text m ISRC
+isrcF = validate (maybe (Error "Could not parse ISRC") Success . preview isrc) $
+  text Nothing

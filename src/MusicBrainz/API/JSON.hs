@@ -26,7 +26,7 @@ import MusicBrainz.Data.Recording (RecordingUse(..))
 
 --------------------------------------------------------------------------------
 instance ToJSON (MBID a) where
-  toJSON = toJSON . view (re mbid)
+  toJSON = toJSON . review mbid
 
 
 --------------------------------------------------------------------------------
@@ -105,6 +105,11 @@ instance ToJSON Editor where
 --------------------------------------------------------------------------------
 instance ToJSON Gender where
   toJSON Gender{..} = object [ "name" .= genderName ]
+
+
+--------------------------------------------------------------------------------
+instance ToJSON ISRC where
+  toJSON = toJSON . review isrc
 
 
 --------------------------------------------------------------------------------
