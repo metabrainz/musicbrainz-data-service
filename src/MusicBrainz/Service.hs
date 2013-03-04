@@ -276,6 +276,7 @@ serviceInit connInfo sessionStore =
       , ("/label/view-revision", expose Label.viewRevision)
 
       , ("/recording/create", expose Recording.create)
+      , ("/recording/find-by-artist", expose Recording.findByArtist)
       , ("/recording/find-latest", expose Recording.findLatest)
       , ("/recording/find-recording-tracks", expose Recording.findRecordingTracks)
       , ("/recording/get-revision", expose Recording.getRevision)

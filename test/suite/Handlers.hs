@@ -50,6 +50,7 @@ tests = map testHandlerExists
   , "/label/view-relationships"
   , "/label/view-revision"
   , "/recording/create"
+  , "/recording/find-by-artist"
   , "/recording/find-latest"
   , "/recording/find-recording-tracks"
   , "/recording/get-revision"

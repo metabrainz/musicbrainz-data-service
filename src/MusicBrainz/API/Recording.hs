@@ -82,3 +82,8 @@ getRevision = Common.getRevision
 --------------------------------------------------------------------------------
 findRecordingTracks :: Form Text MusicBrainz [MB.RecordingUse]
 findRecordingTracks = runApi $ MB.findRecordingTracks <$> "recording" .: coreRef
+
+
+--------------------------------------------------------------------------------
+findByArtist :: Form Text MusicBrainz [CoreEntity Recording]
+findByArtist = runApi $ MB.findByArtist <$> "artist" .: coreRef
