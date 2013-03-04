@@ -14,6 +14,7 @@ import           MusicBrainz hiding (coreRef)
 import           MusicBrainz.API
 import qualified MusicBrainz.API.Common as Common
 import qualified MusicBrainz.Data as MB
+import qualified MusicBrainz.Data.Work as MB
 import           MusicBrainz.API.JSON
 
 --------------------------------------------------------------------------------
@@ -84,3 +85,8 @@ merge = Common.merge
 --------------------------------------------------------------------------------
 getRevision :: Form Text MusicBrainz (Entity (Revision Work))
 getRevision = Common.getRevision
+
+
+--------------------------------------------------------------------------------
+findByArtist :: Form Text MusicBrainz [CoreEntity Work]
+findByArtist = runApi $ MB.findByArtist <$> "artist" .: coreRef

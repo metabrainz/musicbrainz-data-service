@@ -90,6 +90,7 @@ tests = map testHandlerExists
   , "/url/view-revision"
   , "/work/create"
   , "/work/eligible-for-cleanup"
+  , "/work/find-by-artist"
   , "/work/find-latest"
   , "/work/get-revision"
   , "/work/merge"
