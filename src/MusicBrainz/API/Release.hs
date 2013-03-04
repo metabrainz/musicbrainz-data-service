@@ -134,3 +134,8 @@ viewMediums = runApi $ MB.viewMediums <$> setOf revisionRef
 --------------------------------------------------------------------------------
 findByReleaseGroup :: Form Text MusicBrainz [CoreEntity Release]
 findByReleaseGroup = runApi $ MB.findByReleaseGroup <$> "release-group" .: coreRef
+
+
+--------------------------------------------------------------------------------
+findByArtist :: Form Text MusicBrainz [CoreEntity Release]
+findByArtist = runApi $ MB.findByArtist <$> "artist" .: coreRef
