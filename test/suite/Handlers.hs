@@ -93,6 +93,7 @@ tests = map testHandlerExists
   , "/work/create"
   , "/work/eligible-for-cleanup"
   , "/work/find-by-artist"
+  , "/work/find-by-iswc"
   , "/work/find-latest"
   , "/work/get-revision"
   , "/work/merge"

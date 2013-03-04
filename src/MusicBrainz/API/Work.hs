@@ -45,11 +45,14 @@ tree =
            <*> aliases
            <*> annotation
            <*> (Set.fromList <$> "iswcs" .: listOf (const $ "iswc" .: iswcF) Nothing)
-  where
-    iswcF =
-      validate (\input -> case input ^? iswc of
-                  Nothing -> Error "Invalid ISWC"
-                  Just i -> return i) nonEmptyText
+
+
+--------------------------------------------------------------------------------
+iswcF :: Monad m => Form Text m ISWC
+iswcF =
+  validate (\input -> case input ^? iswc of
+              Nothing -> Error "Invalid ISWC"
+              Just i -> return i) nonEmptyText
 
 
 --------------------------------------------------------------------------------
@@ -90,3 +93,8 @@ getRevision = Common.getRevision
 --------------------------------------------------------------------------------
 findByArtist :: Form Text MusicBrainz [CoreEntity Work]
 findByArtist = runApi $ MB.findByArtist <$> "artist" .: coreRef
+
+
+--------------------------------------------------------------------------------
+findByIswc :: Form Text MusicBrainz [CoreEntity Work]
+findByIswc = runApi $ MB.findByIswc <$> "iswc" .: iswcF
